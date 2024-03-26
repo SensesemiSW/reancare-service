@@ -5,11 +5,12 @@ import { ResponseHandler } from '../../../../common/handlers/response.handler';
 import { MeditationService } from '../../../../services/wellness/exercise/meditation.service';
 import { Injector } from '../../../../startup/injector';
 import { MeditationValidator } from './meditation.validator';
-import { AwardsFactsService } from '../../../../modules/awards.facts/awards.facts.service';
+import { AwardsFactsService } from '../../../../../src.bg.worker/src.bg/modules/awards.facts/awards.facts.service';
 import { HelperRepo } from '../../../../database/sql/sequelize/repositories/common/helper.repo';
 import { TimeHelper } from '../../../../common/time.helper';
 import { DurationType } from '../../../../domain.types/miscellaneous/time.types';
-import { EHRMentalWellBeingService } from '../../../../modules/ehr.analytics/ehr.services/ehr.mental.wellbeing.service';
+import { EHRMentalWellBeingService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.mental.wellbeing.service';
+import { publishAddMedicationToQueue, publishAddMeditationEHRToQueue, publishUpdateMeditationEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -36,7 +37,8 @@ export class MeditationController {
                 throw new ApiError(400, 'Cannot create record for meditation!');
             }
 
-            await this._ehrMentalWellBeingService.addEHRMeditationForAppNames(meditation);
+            //await this._ehrMentalWellBeingService.addEHRMeditationForAppNames(meditation);
+            await publishAddMeditationEHRToQueue(meditation)
 
             if (meditation.DurationInMins) {
                 var timestamp = meditation.EndTime ?? meditation.StartTime;
@@ -47,18 +49,31 @@ export class MeditationController {
                 const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(meditation.PatientUserId);
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
 
-                AwardsFactsService.addOrUpdateMentalHealthResponseFact({
-                    PatientUserId : meditation.PatientUserId,
-                    Facts         : {
-                        Name     : 'Meditation',
-                        Duration : meditation.DurationInMins,
-                        Unit     : 'mins'
+                // AwardsFactsService.addOrUpdateMentalHealthResponseFact({
+                //     PatientUserId : meditation.PatientUserId,
+                //     Facts         : {
+                //         Name     : 'Meditation',
+                //         Duration : meditation.DurationInMins,
+                //         Unit     : 'mins'
+                //     },
+                //     RecordId       : meditation.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: meditation.PatientUserId,
+                    Facts: {
+                        Name: 'Meditation',
+                        Duration: meditation.DurationInMins,
+                        Unit: 'mins'
                     },
-                    RecordId       : meditation.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: meditation.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: await TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishAddMedicationToQueue(message)
             }
 
             ResponseHandler.success(request, response, 'Meditation record created successfully!', 201, {
@@ -121,7 +136,8 @@ export class MeditationController {
                 throw new ApiError(400, 'Unable to update meditation record!');
             }
 
-            await this._ehrMentalWellBeingService.addEHRMeditationForAppNames(updated);
+            //await this._ehrMentalWellBeingService.addEHRMeditationForAppNames(updated);
+            await publishUpdateMeditationEHRToQueue(updated)
 
             ResponseHandler.success(request, response, 'Meditation record updated successfully!', 200, {
                 Meditation : updated,

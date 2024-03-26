@@ -1,4 +1,4 @@
-import { BiometricsHeightStore } from "../../../modules/ehr/services/biometrics.height.store";
+import { BiometricsHeightStore } from "../../../../src.bg.worker/src.bg/modules/ehr/services/biometrics.height.store";
 import { inject, injectable } from "tsyringe";
 import { IBodyHeightRepo } from "../../../database/repository.interfaces/clinical/biometrics/body.height.repo.interface";
 import { BodyHeightDomainModel } from '../../../domain.types/clinical/biometrics/body.height/body.height.domain.model';

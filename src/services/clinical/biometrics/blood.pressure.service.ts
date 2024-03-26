@@ -4,7 +4,7 @@ import { IBloodPressureRepo } from "../../../database/repository.interfaces/clin
 import { BloodPressureDomainModel } from '../../../domain.types/clinical/biometrics/blood.pressure/blood.pressure.domain.model';
 import { BloodPressureDto } from '../../../domain.types/clinical/biometrics/blood.pressure/blood.pressure.dto';
 import { BloodPressureSearchFilters, BloodPressureSearchResults } from '../../../domain.types/clinical/biometrics/blood.pressure/blood.pressure.search.types';
-import { BloodPressureStore } from "../../../modules/ehr/services/blood.pressure.store";
+import { BloodPressureStore } from "../../../../src.bg.worker/src.bg/modules/ehr/services/blood.pressure.store";
 import { Loader } from "../../../startup/loader";
 import { ConfigurationManager } from "../../../config/configuration.manager";
 import * as MessageTemplates from '../../../modules/communication/message.template/message.templates.json';

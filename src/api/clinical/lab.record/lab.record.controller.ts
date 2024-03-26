@@ -6,7 +6,8 @@ import { uuid } from '../../../domain.types/miscellaneous/system.types';
 import { LabRecordService } from '../../../services/clinical/lab.record/lab.record.service';
 import { LabRecordValidator } from './lab.record.validator';
 import { Injector } from '../../../startup/injector';
-import { EHRLabService } from '../../../modules/ehr.analytics/ehr.services/ehr.lab.service';
+import { EHRLabService } from '../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.lab.service';
+import { publishLaddRecordEHRToQueue, publishUpdateLabRecordEHRToQueue, publishDeleteLabRecordEHRToQueue } from '../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -34,10 +35,11 @@ export class LabRecordController {
             if (labRecord == null) {
                 throw new ApiError(400, 'Cannot create lab record!');
             }
-            await this._ehrLabService.addEHRLabRecordForAppNames(labRecord);
+            //await this._ehrLabService.addEHRLabRecordForAppNames(labRecord);
+            await publishLaddRecordEHRToQueue(labRecord)
 
             ResponseHandler.success(request, response, `${labRecord.DisplayName} record created successfully!`, 201, {
-                LabRecord : labRecord,
+                LabRecord: labRecord,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -54,7 +56,7 @@ export class LabRecordController {
                 throw new ApiError(404, 'Lab record not found.');
             }
             ResponseHandler.success(request, response, `${labRecord.DisplayName} record retrieved successfully!`, 200, {
-                LabRecord : labRecord,
+                LabRecord: labRecord,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -73,7 +75,8 @@ export class LabRecordController {
                     : `Total ${count} lab records retrieved successfully!`;
 
             ResponseHandler.success(request, response, message, 200, {
-                LabRecordRecords : searchResults });
+                LabRecordRecords: searchResults
+            });
 
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -95,10 +98,11 @@ export class LabRecordController {
                 throw new ApiError(400, 'Unable to update lab record!');
             }
 
-            await this._ehrLabService.addEHRLabRecordForAppNames(updated);
-            
+            //await this._ehrLabService.addEHRLabRecordForAppNames(updated);
+            await publishUpdateLabRecordEHRToQueue(updated)
+
             ResponseHandler.success(request, response, `${updated.DisplayName} record updated successfully!`, 200, {
-                LabRecord : updated,
+                LabRecord: updated,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -120,10 +124,11 @@ export class LabRecordController {
             }
 
             // delete ehr record
-            this._ehrLabService.deleteLabEHRRecord(existingRecord.id);
+            //this._ehrLabService.deleteLabEHRRecord(existingRecord.id);
+            await publishDeleteLabRecordEHRToQueue(existingRecord.id)
 
             ResponseHandler.success(request, response, `${existingRecord.DisplayName} record deleted successfully!`, 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -131,5 +136,5 @@ export class LabRecordController {
     };
 
     //#endregion
-    
+
 }

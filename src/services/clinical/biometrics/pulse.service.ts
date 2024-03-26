@@ -4,7 +4,7 @@ import { IPulseRepo } from "../../../database/repository.interfaces/clinical/bio
 import { PulseDomainModel } from '../../../domain.types/clinical/biometrics/pulse/pulse.domain.model';
 import { PulseDto } from '../../../domain.types/clinical/biometrics/pulse/pulse.dto';
 import { PulseSearchFilters, PulseSearchResults } from '../../../domain.types/clinical/biometrics/pulse/pulse.search.types';
-import { PulseStore } from "../../../modules/ehr/services/pulse.store";
+import { PulseStore } from "../../../../src.bg.worker/src.bg/modules/ehr/services/pulse.store";
 import { ConfigurationManager } from "../../../config/configuration.manager";
 import { Injector } from "../../../startup/injector";
 

@@ -5,7 +5,8 @@ import { uuid } from '../../../../domain.types/miscellaneous/system.types';
 import { StepCountService } from '../../../../services/wellness/daily.records/step.count.service';
 import { Injector } from '../../../../startup/injector';
 import { StepCountValidator } from './step.count.validator';
-import { EHRPhysicalActivityService } from '../../../../modules/ehr.analytics/ehr.services/ehr.physical.activity.service';
+import { EHRPhysicalActivityService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.physical.activity.service';
+import { publishAddStepCountEHRToQueue, publishUpdateStepCountEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -45,11 +46,12 @@ export class StepCountController {
             if (stepCount == null) {
                 throw new ApiError(400, 'Cannot create Step Count!');
             }
-            
-            await this._ehrPhysicalActivityService.addEHRRecordStepCountForAppNames(stepCount);
+
+            //await this._ehrPhysicalActivityService.addEHRRecordStepCountForAppNames(stepCount);
+            await publishAddStepCountEHRToQueue(stepCount)
 
             ResponseHandler.success(request, response, 'Step count created successfully!', 201, {
-                StepCount : stepCount,
+                StepCount: stepCount,
 
             });
         } catch (error) {
@@ -67,7 +69,7 @@ export class StepCountController {
             }
 
             ResponseHandler.success(request, response, 'Step Count retrieved successfully!', 200, {
-                StepCount : stepCount,
+                StepCount: stepCount,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -110,10 +112,11 @@ export class StepCountController {
                 throw new ApiError(400, 'Unable to update Step ount record!');
             }
 
-            await this._ehrPhysicalActivityService.addEHRRecordStepCountForAppNames(updated);
+            //await this._ehrPhysicalActivityService.addEHRRecordStepCountForAppNames(updated);
+            await publishUpdateStepCountEHRToQueue(updated)
 
             ResponseHandler.success(request, response, 'Step Count record updated successfully!', 200, {
-                StepCount : updated,
+                StepCount: updated,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -135,7 +138,7 @@ export class StepCountController {
             }
 
             ResponseHandler.success(request, response, 'Step Count record deleted successfully!', 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);

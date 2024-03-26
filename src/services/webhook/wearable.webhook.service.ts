@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import { inject, injectable } from "tsyringe";
 import { ConfigurationManager } from "../../config/configuration.manager";
-import { BodyWeightStore } from "../../modules/ehr/services/body.weight.store";
+import { BodyWeightStore } from "../../../src.bg.worker/src.bg/modules/ehr/services/body.weight.store";
 import { Injector } from "../../startup/injector";
 import { IPulseRepo } from "../../database/repository.interfaces/clinical/biometrics/pulse.repo.interface ";
 import { IBodyTemperatureRepo } from "../..//database/repository.interfaces/clinical/biometrics/body.temperature.repo.interface";

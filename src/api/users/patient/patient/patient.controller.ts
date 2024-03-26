@@ -19,7 +19,8 @@ import { CustomActionsHandler } from '../../../../custom/custom.actions.handler'
 import { HealthProfileDomainModel } from '../../../../domain.types/users/patient/health.profile/health.profile.domain.model';
 import { RoleDto } from '../../../../domain.types/role/role.dto';
 import { Roles } from '../../../../domain.types/role/role.types';
-import { EHRPatientService } from '../../../../modules/ehr.analytics/ehr.services/ehr.patient.service';
+import { EHRPatientService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.patient.service';
+import { publishAddPatientEHRToQueue, publishDeletePatientEHRToQueue, publishUpdatePatientEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -63,7 +64,8 @@ export class PatientController extends BaseUserController {
             const clientCode = request.currentClient.ClientCode;
             await this._customActionHandler.performActions_PostRegistration(patient, clientCode);
 
-            await this._ehrPatientService.addEHRRecordPatientForAppNames(patient);
+            //await this._ehrPatientService.addEHRRecordPatientForAppNames(patient);
+            await publishAddPatientEHRToQueue(patient)
 
             if (createdNew) {
                 ResponseHandler.success(request, response, 'Patient created successfully!', 201, {
@@ -231,7 +233,8 @@ export class PatientController extends BaseUserController {
             //     location = addresses[0].Location;
             // }
 
-            await this._ehrPatientService.addEHRRecordPatientForAppNames(updatedPatient);
+            //await this._ehrPatientService.addEHRRecordPatientForAppNames(updatedPatient);
+            await publishUpdatePatientEHRToQueue(updatedPatient)
 
             const patient = await this._service.getByUserId(userId);
 
@@ -292,7 +295,8 @@ export class PatientController extends BaseUserController {
             }
 
             // delete static ehr record
-            await this._ehrPatientService.deleteStaticEHRRecord(userId);
+            //await this._ehrPatientService.deleteStaticEHRRecord(userId);
+            await publishDeletePatientEHRToQueue(userId)
 
             ResponseHandler.success(request, response, 'Patient records deleted successfully!', 200, {
                 Deleted : true,

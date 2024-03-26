@@ -8,9 +8,10 @@ import { Injector } from '../../../../startup/injector';
 import { PhysicalActivityValidator } from './physical.activity.validator';
 import { HelperRepo } from '../../../../database/sql/sequelize/repositories/common/helper.repo';
 import { TimeHelper } from '../../../../common/time.helper';
-import { AwardsFactsService } from '../../../../modules/awards.facts/awards.facts.service';
+import { AwardsFactsService } from '../../../../../src.bg.worker/src.bg/modules/awards.facts/awards.facts.service';
 import { DurationType } from '../../../../domain.types/miscellaneous/time.types';
-import { EHRPhysicalActivityService } from '../../../../modules/ehr.analytics/ehr.services/ehr.physical.activity.service';
+import { EHRPhysicalActivityService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.physical.activity.service';
+import { publishAddPhysicalActivityEHRToQueue, publishAddPhysicalActivityToQueue, publishUpdatePhysicalActivityEHRToQueue, publishUpdatePhysicalActivityToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -47,7 +48,8 @@ export class PhysicalActivityController {
                 throw new ApiError(400, 'Cannot create physical activity record!');
             }
             
-            await this._ehrPhysicalActivityService.addEHRRecordPhysicalActivityForAppNames(physicalActivity);
+            //await this._ehrPhysicalActivityService.addEHRRecordPhysicalActivityForAppNames(physicalActivity);
+            await publishAddPhysicalActivityEHRToQueue(physicalActivity)
 
             // Adding record to award service
             if (physicalActivity.PhysicalActivityQuestionAns) {
@@ -59,16 +61,27 @@ export class PhysicalActivityController {
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
                 const currentTimeZone = await HelperRepo.getPatientTimezone(physicalActivity.PatientUserId);
 
-                AwardsFactsService.addOrUpdatePhysicalActivityResponseFact({
-                    PatientUserId : physicalActivity.PatientUserId,
-                    Facts         : {
-                        PhysicalActivityQuestionAns : physicalActivity.PhysicalActivityQuestionAns,
+                // AwardsFactsService.addOrUpdatePhysicalActivityResponseFact({
+                //     PatientUserId : physicalActivity.PatientUserId,
+                //     Facts         : {
+                //         PhysicalActivityQuestionAns : physicalActivity.PhysicalActivityQuestionAns,
+                //     },
+                //     RecordId       : physicalActivity.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: physicalActivity.PatientUserId,
+                    Facts: {
+                        PhysicalActivityQuestionAns: physicalActivity.PhysicalActivityQuestionAns,
                     },
-                    RecordId       : physicalActivity.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: physicalActivity.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: await TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishAddPhysicalActivityToQueue(message)
             }
             ResponseHandler.success(request, response, 'Physical activity record created successfully!', 201, {
                 PhysicalActivity : physicalActivity,
@@ -132,7 +145,8 @@ export class PhysicalActivityController {
                 throw new ApiError(400, 'Unable to update physical activity record!');
             }
 
-            await this._ehrPhysicalActivityService.addEHRRecordPhysicalActivityForAppNames(physicalActivity);
+            //await this._ehrPhysicalActivityService.addEHRRecordPhysicalActivityForAppNames(physicalActivity);
+            await publishUpdatePhysicalActivityEHRToQueue(physicalActivity)
 
             if (updated.PhysicalActivityQuestionAns !== null) {
                 var timestamp = updated.CreatedAt ?? updated.EndTime ?? updated.StartTime;
@@ -141,15 +155,25 @@ export class PhysicalActivityController {
                 }
                 //const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(updated.PatientUserId);
                 //const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
-                AwardsFactsService.addOrUpdatePhysicalActivityResponseFact({
-                    PatientUserId : updated.PatientUserId,
-                    Facts         : {
-                        PhysicalActivityQuestionAns : updated.PhysicalActivityQuestionAns,
+                // AwardsFactsService.addOrUpdatePhysicalActivityResponseFact({
+                //     PatientUserId : updated.PatientUserId,
+                //     Facts         : {
+                //         PhysicalActivityQuestionAns : updated.PhysicalActivityQuestionAns,
+                //     },
+                //     RecordId      : updated.id,
+                //     RecordDate    : timestamp,
+                //     RecordDateStr : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                // });
+                const message = {
+                    PatientUserId: updated.PatientUserId,
+                    Facts: {
+                        PhysicalActivityQuestionAns: updated.PhysicalActivityQuestionAns,
                     },
-                    RecordId      : updated.id,
-                    RecordDate    : timestamp,
-                    RecordDateStr : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                });
+                    RecordId: updated.id,
+                    RecordDate: timestamp,
+                    RecordDateStr: await TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                }
+                await publishUpdatePhysicalActivityToQueue(message)
             }
 
             ResponseHandler.success(request, response, 'Physical activity record updated successfully!', 200, {

@@ -4,7 +4,8 @@ import { ResponseHandler } from '../../../../common/handlers/response.handler';
 import { BodyHeightService } from '../../../../services/clinical/biometrics/body.height.service';
 import { Injector } from '../../../../startup/injector';
 import { BodyHeightValidator } from './body.height.validator';
-import { EHRVitalService } from '../../../../modules/ehr.analytics/ehr.services/ehr.vital.service';
+import { EHRVitalService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.vital.service';
+import { publishAddBodyHeightEHRToQueue, publishDeleteBodyHeightEHRToQueue, publishUpdateBodyHeightEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -28,10 +29,11 @@ export class BodyHeightController {
             if (bodyHeight == null) {
                 throw new ApiError(400, 'Cannot create record for height!');
             }
-            await this._ehrVitalService.addEHRBodyHeightForAppNames(bodyHeight);
+            //await this._ehrVitalService.addEHRBodyHeightForAppNames(bodyHeight);
+            await publishAddBodyHeightEHRToQueue(bodyHeight)
 
             ResponseHandler.success(request, response, 'Height record created successfully!', 201, {
-                BodyHeight : bodyHeight
+                BodyHeight: bodyHeight
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -48,7 +50,7 @@ export class BodyHeightController {
             }
 
             ResponseHandler.success(request, response, 'Height record retrieved successfully!', 200, {
-                BodyHeight : bodyHeight
+                BodyHeight: bodyHeight
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -68,7 +70,7 @@ export class BodyHeightController {
                     : `Total ${count} height records retrieved successfully!`;
 
             ResponseHandler.success(request, response, message, 200, {
-                BodyHeightRecords : searchResults
+                BodyHeightRecords: searchResults
             });
 
         } catch (error) {
@@ -90,10 +92,11 @@ export class BodyHeightController {
             if (updated == null) {
                 throw new ApiError(400, 'Unable to update height record!');
             }
-            await this._ehrVitalService.addEHRBodyHeightForAppNames(updated);
+            //await this._ehrVitalService.addEHRBodyHeightForAppNames(updated);
+            await publishUpdateBodyHeightEHRToQueue(updated)
 
             ResponseHandler.success(request, response, 'Height record updated successfully!', 200, {
-                BodyHeight : updated
+                BodyHeight: updated
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -114,10 +117,11 @@ export class BodyHeightController {
             }
 
             // delete ehr record
-            this._ehrVitalService.deleteRecord(existing.id);
+            //this._ehrVitalService.deleteRecord(existing.id);
+            await publishDeleteBodyHeightEHRToQueue(existing.id)
 
             ResponseHandler.success(request, response, 'Height record deleted successfully!', 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);

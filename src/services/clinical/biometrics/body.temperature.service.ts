@@ -4,7 +4,7 @@ import { IBodyTemperatureRepo } from "../../../database/repository.interfaces/cl
 import { BodyTemperatureDomainModel } from '../../../domain.types/clinical/biometrics/body.temperature/body.temperature.domain.model';
 import { BodyTemperatureDto } from '../../../domain.types/clinical/biometrics/body.temperature/body.temperature.dto';
 import { BodyTemperatureSearchFilters, BodyTemperatureSearchResults } from '../../../domain.types/clinical/biometrics/body.temperature/body.temperature.search.types';
-import { TemperatureStore } from "../../../modules/ehr/services/body.temperature.store";
+import { TemperatureStore } from "../../../../src.bg.worker/src.bg/modules/ehr/services/body.temperature.store";
 import { ConfigurationManager } from "../../../config/configuration.manager";
 import { Injector } from "../../../startup/injector";
 

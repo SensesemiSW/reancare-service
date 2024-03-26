@@ -15,7 +15,8 @@ import { Injector } from '../../../../startup/injector';
 import { EmergencyContactValidator } from './emergency.contact.validator';
 import { HospitalService } from '../../../../services/hospitals/hospital.service';
 import { HealthSystemService } from '../../../../services/hospitals/health.system.service';
-import { EHRPatientService } from '../../../../modules/ehr.analytics/ehr.services/ehr.patient.service';
+import { EHRPatientService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.patient.service';
+import { publishAddEmergencyContactEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -150,7 +151,8 @@ export class EmergencyContactController {
                 throw new ApiError(400, 'Cannot create patientEmergencyContact!');
             }
 
-            await this._ehrPatientService.addEHRRecordEmergencyContactForAppNames(patientEmergencyContact);
+            //await this._ehrPatientService.addEHRRecordEmergencyContactForAppNames(patientEmergencyContact);
+            await publishAddEmergencyContactEHRToQueue(patientEmergencyContact)
 
             ResponseHandler.success(request, response, 'Emergency contact created successfully!', 201, {
                 EmergencyContact : patientEmergencyContact,

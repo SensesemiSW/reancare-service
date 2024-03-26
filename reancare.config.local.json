@@ -141,7 +141,7 @@
             "Code": "Terra"
         }
     ],
-    "Gamification": false,
+    "Gamification": true,
     "EHRAnalytics": true,
     "MaxUploadFileSize": 104857600
 }

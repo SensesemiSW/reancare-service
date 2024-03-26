@@ -13,7 +13,8 @@ import { UserTaskValidator } from './user.task.validator';
 import { MedicationConsumptionService } from '../../../services/clinical/medication/medication.consumption.service';
 import { CareplanService } from '../../../services/clinical/careplan.service';
 import { Injector } from '../../../startup/injector';
-import { EHRUserTaskService } from '../../../modules/ehr.analytics/ehr.services/ehr.user.task.service';
+import { EHRUserTaskService } from '../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.user.task.service';
+import { publishUserFinishTaskEHRToQueue } from '../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -44,7 +45,7 @@ export class UserTaskController {
     getCategories = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             ResponseHandler.success(request, response, 'User task categories retrieved successfully!', 200, {
-                UserTaskCategories : UserTaskCategoryList,
+                UserTaskCategories: UserTaskCategoryList,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -54,7 +55,7 @@ export class UserTaskController {
     getUserActionTypes = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             ResponseHandler.success(request, response, 'User action types retrieved successfully!', 200, {
-                UserActionTypes : UserActionTypeList,
+                UserActionTypes: UserActionTypeList,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -71,7 +72,7 @@ export class UserTaskController {
             }
 
             ResponseHandler.success(request, response, 'User task created successfully!', 201, {
-                UserTask : userTask,
+                UserTask: userTask,
             });
 
         } catch (error) {
@@ -99,7 +100,7 @@ export class UserTaskController {
             }
 
             ResponseHandler.success(request, response, 'User task retrieved successfully!', 200, {
-                UserTask : userTask,
+                UserTask: userTask,
             });
             Logger.instance().log(JSON.stringify(userTask));
 
@@ -127,7 +128,7 @@ export class UserTaskController {
             }
 
             ResponseHandler.success(request, response, 'User task retrieved successfully!', 200, {
-                UserTask : userTask,
+                UserTask: userTask,
             });
 
         } catch (error) {
@@ -185,7 +186,7 @@ export class UserTaskController {
             }
 
             ResponseHandler.success(request, response, 'User task started successfully!', 200, {
-                UserTask : updated,
+                UserTask: updated,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -210,7 +211,7 @@ export class UserTaskController {
                 Logger.instance().log(`${existing.ActionType} - Action result : ${result}`);
 
                 if (userResponse) {
-                    await this._careplanService.updateActivityUserResponse(existing.ActionId, userResponse );
+                    await this._careplanService.updateActivityUserResponse(existing.ActionId, userResponse);
                 }
             }
 
@@ -225,11 +226,16 @@ export class UserTaskController {
                     updated['Action'] = action;
                 }
                 var healthSystem = await this._service.getHealthSystem(updated.UserId);
-                await this._ehrUserTaskService.addEHRUserTaskForAppNames(updated, healthSystem);
+                //await this._ehrUserTaskService.addEHRUserTaskForAppNames(updated, healthSystem);
+                const message = {
+                    Updated: updated,
+                    HealthSystem: healthSystem
+                }
+                await publishUserFinishTaskEHRToQueue(message)
             }
 
             ResponseHandler.success(request, response, 'User task finished successfully!', 200, {
-                UserTask : updated,
+                UserTask: updated,
             });
 
         } catch (error) {
@@ -267,7 +273,7 @@ export class UserTaskController {
             }
 
             ResponseHandler.success(request, response, 'User task record updated successfully!', 200, {
-                UserTask : updated,
+                UserTask: updated,
             });
 
         } catch (error) {
@@ -304,7 +310,7 @@ export class UserTaskController {
             }
 
             ResponseHandler.success(request, response, 'User task cancelled successfully!', 200, {
-                UserTask : updated,
+                UserTask: updated,
             });
 
         } catch (error) {
@@ -312,7 +318,7 @@ export class UserTaskController {
         }
     };
 
-    getTaskSummaryForDay = async(request: express.Request, response: express.Response): Promise<void> => {
+    getTaskSummaryForDay = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             const { userId, date } = await this._validator.getTaskSummaryForDay(request);
             const summary = await this._service.getTaskSummaryForDay(userId, date);
@@ -321,7 +327,7 @@ export class UserTaskController {
             summary.PendingTasks = await this.updateDtos(summary.PendingTasks);
 
             ResponseHandler.success(request, response, 'User task cancelled successfully!', 200, {
-                UserTaskSummaryForDay : summary
+                UserTaskSummaryForDay: summary
             });
 
         } catch (error) {
@@ -343,7 +349,7 @@ export class UserTaskController {
             }
 
             ResponseHandler.success(request, response, 'User task record deleted successfully!', 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -356,7 +362,7 @@ export class UserTaskController {
             const deletedUserTask = await this._service.getFutureTaskByUserId(userId);
 
             ResponseHandler.success(request, response, `Total ${deletedUserTask} user task record deleted successfully!`, 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);

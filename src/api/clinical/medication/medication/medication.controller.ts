@@ -21,8 +21,9 @@ import { FileResourceService } from '../../../../services/general/file.resource.
 import { UserService } from '../../../../services/users/user/user.service';
 import { Injector } from '../../../../startup/injector';
 import { MedicationValidator } from './medication.validator';
-import { EHRMedicationService } from '../../../../modules/ehr.analytics/ehr.services/ehr.medication.service';
+import { EHRMedicationService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.medication.service';
 import { Logger } from '../../../../common/logger';
+import { publishAddMedicationEHRToQueue, publishDeleteMedicationEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,7 +50,7 @@ export class MedicationController {
     getTimeSchedules = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             ResponseHandler.success(request, response, 'Medication time schedules retrieved successfully!', 200, {
-                MedicationTimeSchedules : MedicationTimeSchedulesList,
+                MedicationTimeSchedules: MedicationTimeSchedulesList,
             });
 
         } catch (error) {
@@ -60,7 +61,7 @@ export class MedicationController {
     getFrequencyUnits = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             ResponseHandler.success(request, response, 'Medication frequency units retrieved successfully!', 200, {
-                MedicationFrequencyUnits : MedicationFrequencyUnitsList,
+                MedicationFrequencyUnits: MedicationFrequencyUnitsList,
             });
 
         } catch (error) {
@@ -71,7 +72,7 @@ export class MedicationController {
     getDosageUnits = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             ResponseHandler.success(request, response, 'Medication dosage units retrieved successfully!', 200, {
-                MedicationDosageUnits : MedicationDosageUnitsList,
+                MedicationDosageUnits: MedicationDosageUnitsList,
             });
 
         } catch (error) {
@@ -82,7 +83,7 @@ export class MedicationController {
     getDurationUnits = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             ResponseHandler.success(request, response, 'Medication duration units retrieved successfully!', 200, {
-                MedicationDurationUnits : MedicationDurationUnitsList,
+                MedicationDurationUnits: MedicationDurationUnitsList,
             });
 
         } catch (error) {
@@ -93,7 +94,7 @@ export class MedicationController {
     getAdministrationRoutes = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             ResponseHandler.success(request, response, 'Medication administration routes retrieved successfully!', 200, {
-                MedicationAdministrationRoutes : MedicationAdministrationRoutesList,
+                MedicationAdministrationRoutes: MedicationAdministrationRoutesList,
             });
 
         } catch (error) {
@@ -124,10 +125,10 @@ export class MedicationController {
                 var doseValue = Helper.parseIntegerFromString(medication.Dose.toString()) ?? 1;
 
                 var consumptionSummary: ConsumptionSummaryDto = {
-                    TotalConsumptionCount   : stats.TotalConsumptionCount,
-                    TotalDoseCount          : stats.TotalConsumptionCount * doseValue,
-                    PendingConsumptionCount : stats.PendingConsumptionCount,
-                    PendingDoseCount        : stats.PendingConsumptionCount * doseValue,
+                    TotalConsumptionCount: stats.TotalConsumptionCount,
+                    TotalDoseCount: stats.TotalConsumptionCount * doseValue,
+                    PendingConsumptionCount: stats.PendingConsumptionCount,
+                    PendingDoseCount: stats.PendingConsumptionCount * doseValue,
                 };
 
                 medication.ConsumptionSummary = consumptionSummary;
@@ -135,11 +136,12 @@ export class MedicationController {
 
             var medicationConsumptions = await this._medicationConsumptionService.getByMedicationId(medication.id);
             for await (var mc of medicationConsumptions) {
-                await this._ehrMedicationService.addEHRMedicationConsumptionForAppNames(mc);
+                //await this._ehrMedicationService.addEHRMedicationConsumptionForAppNames(mc);
+                await publishAddMedicationEHRToQueue(mc)
             }
 
             ResponseHandler.success(request, response, 'Medication created successfully!', 201, {
-                Medication : medication,
+                Medication: medication,
             });
 
         } catch (error) {
@@ -163,17 +165,17 @@ export class MedicationController {
             var doseValue = Helper.parseIntegerFromString(medication.Dose.toString()) ?? 1;
 
             var consumptionSummary: ConsumptionSummaryDto = {
-                TotalConsumptionCount   : stats.TotalConsumptionCount,
-                TotalDoseCount          : stats.TotalConsumptionCount * doseValue,
-                PendingConsumptionCount : stats.PendingConsumptionCount,
-                PendingDoseCount        : stats.PendingConsumptionCount * doseValue,
+                TotalConsumptionCount: stats.TotalConsumptionCount,
+                TotalDoseCount: stats.TotalConsumptionCount * doseValue,
+                PendingConsumptionCount: stats.PendingConsumptionCount,
+                PendingDoseCount: stats.PendingConsumptionCount * doseValue,
             };
 
             medication.ConsumptionSummary = consumptionSummary;
 
             Logger.instance().log(`[MedicationTime] GetById - medication response returned`);
             ResponseHandler.success(request, response, 'Medication retrieved successfully!', 200, {
-                Medication : medication,
+                Medication: medication,
             });
         } catch (error) {
             Logger.instance().log(`[MedicationTime] GetById - error occured`);
@@ -227,17 +229,17 @@ export class MedicationController {
                 var doseValue = Helper.parseIntegerFromString(updated.Dose.toString()) ?? 1;
 
                 var consumptionSummary: ConsumptionSummaryDto = {
-                    TotalConsumptionCount   : stats.TotalConsumptionCount,
-                    TotalDoseCount          : stats.TotalConsumptionCount * doseValue,
-                    PendingConsumptionCount : stats.PendingConsumptionCount,
-                    PendingDoseCount        : stats.PendingConsumptionCount * doseValue,
+                    TotalConsumptionCount: stats.TotalConsumptionCount,
+                    TotalDoseCount: stats.TotalConsumptionCount * doseValue,
+                    PendingConsumptionCount: stats.PendingConsumptionCount,
+                    PendingDoseCount: stats.PendingConsumptionCount * doseValue,
                 };
 
                 updated.ConsumptionSummary = consumptionSummary;
             }
 
             ResponseHandler.success(request, response, 'Medication record updated successfully!', 200, {
-                Medication : updated,
+                Medication: updated,
             });
         } catch (error) {
             Logger.instance().log(`[MedicationTime] Update - error occured`);
@@ -263,11 +265,12 @@ export class MedicationController {
             await this._medicationConsumptionService.deleteFutureMedicationSchedules(id);
 
             // delete ehr record
-            this._ehrMedicationService.deleteMedicationEHRRecords(id);
+            //this._ehrMedicationService.deleteMedicationEHRRecords(id);
+            await publishDeleteMedicationEHRToQueue(id)
 
             Logger.instance().log(`[MedicationTime] Delete - medication response returned`);
             ResponseHandler.success(request, response, 'Medication record deleted successfully!', 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             Logger.instance().log(`[MedicationTime] Delete - error occured`);
@@ -282,7 +285,7 @@ export class MedicationController {
             const medications = await this._service.getCurrentMedications(patientUserId);
 
             ResponseHandler.success(request, response, 'Current medications retrieved successfully!', 200, {
-                CurrentMedications : medications,
+                CurrentMedications: medications,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -294,7 +297,7 @@ export class MedicationController {
             const images = await this._service.getStockMedicationImages();
 
             ResponseHandler.success(request, response, 'Medication stock images retrieved successfully!', 200, {
-                MedicationStockImages : images,
+                MedicationStockImages: images,
             });
 
         } catch (error) {
@@ -310,7 +313,7 @@ export class MedicationController {
                 throw new ApiError(404, 'Medication stock image not found.');
             }
             ResponseHandler.success(request, response, 'Medication retrieved successfully!', 200, {
-                MedicationStockImage : image,
+                MedicationStockImage: image,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -352,7 +355,7 @@ export class MedicationController {
                 }
                 else {
                     var drugDomainModel: DrugDomainModel = {
-                        DrugName : domainModel.DrugName
+                        DrugName: domainModel.DrugName
                     };
                     const drug = await this._drugService.create(drugDomainModel);
                     domainModel.DrugId = drug.id;

@@ -4,7 +4,7 @@ import { IBodyWeightRepo } from "../../../database/repository.interfaces/clinica
 import { BodyWeightDomainModel } from '../../../domain.types/clinical/biometrics/body.weight/body.weight.domain.model';
 import { BodyWeightDto } from '../../../domain.types/clinical/biometrics/body.weight/body.weight.dto';
 import { BodyWeightSearchFilters, BodyWeightSearchResults } from '../../../domain.types/clinical/biometrics/body.weight/body.weight.search.types';
-import { BodyWeightStore } from "../../../modules/ehr/services/body.weight.store";
+import { BodyWeightStore } from "../../../../src.bg.worker/src.bg/modules/ehr/services/body.weight.store";
 import { ConfigurationManager } from "../../../config/configuration.manager";
 import { Injector } from "../../../startup/injector";
 

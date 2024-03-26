@@ -4,14 +4,14 @@ import { Logger } from '../../common/logger';
 import { CareplanService } from '../../services/clinical/careplan.service';
 import { PatientService } from '../../services/users/patient/patient.service';
 import { Injector } from '../../startup/injector';
-import { EHRCareplanActivityService } from '../ehr.analytics/ehr.services/ehr.careplan.activity.service';
-import { EHRAssessmentService } from '../../modules/ehr.analytics/ehr.services/ehr.assessment.service';
-import { EHRVitalService } from '../../modules/ehr.analytics/ehr.services/ehr.vital.service';
-import { EHRLabService } from '../../modules/ehr.analytics/ehr.services/ehr.lab.service';
-import { EHRMentalWellBeingService } from '../../modules/ehr.analytics/ehr.services/ehr.mental.wellbeing.service';
-import { EHRPhysicalActivityService } from '../../modules/ehr.analytics/ehr.services/ehr.physical.activity.service';
-import { EHRNutritionService } from '../../modules/ehr.analytics/ehr.services/ehr.nutrition.service';
-import { EHRMedicationService } from '../../modules/ehr.analytics/ehr.services/ehr.medication.service';
+import { EHRCareplanActivityService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.careplan.activity.service';
+import { EHRAssessmentService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.assessment.service';
+import { EHRVitalService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.vital.service';
+import { EHRLabService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.lab.service';
+import { EHRMentalWellBeingService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.mental.wellbeing.service';
+import { EHRPhysicalActivityService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.physical.activity.service';
+import { EHRNutritionService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.nutrition.service';
+import { EHRMedicationService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.medication.service';
 import { LabRecordService } from '../../services/clinical/lab.record/lab.record.service';
 import { HowDoYouFeelService } from '../../services/clinical/symptom/how.do.you.feel.service';
 import { DailyAssessmentService } from '../../services/clinical/daily.assessment/daily.assessment.service';
@@ -31,10 +31,10 @@ import { StandService } from '../../services/wellness/daily.records/stand.servic
 import { StepCountService } from '../../services/wellness/daily.records/step.count.service';
 import { PhysicalActivityService } from '../../services/wellness/exercise/physical.activity.service';
 import { FoodConsumptionService } from '../../services/wellness/nutrition/food.consumption.service';
-import { PatientAppNameCache } from '../ehr.analytics/patient.appname.cache';
+import { PatientAppNameCache } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/patient.appname.cache';
 import { EmergencyContactService } from '../../services/users/patient/emergency.contact.service';
-import { EHRPatientService } from '../ehr.analytics/ehr.services/ehr.patient.service';
-import { EHRHowDoYouFeelService } from '../ehr.analytics/ehr.services/ehr.how.do.you.feel.service';
+import { EHRPatientService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.patient.service';
+import { EHRHowDoYouFeelService } from '../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.how.do.you.feel.service';
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 

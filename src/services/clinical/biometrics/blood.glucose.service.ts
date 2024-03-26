@@ -1,4 +1,4 @@
-import { BloodGlucoseStore } from "../../../modules/ehr/services/blood.glucose.store";
+import { BloodGlucoseStore } from "../../../../src.bg.worker/src.bg/modules/ehr/services/blood.glucose.store";
 import { inject, injectable } from "tsyringe";
 import { IBloodGlucoseRepo } from "../../../database/repository.interfaces/clinical/biometrics/blood.glucose.repo.interface";
 import { BloodGlucoseDomainModel } from '../../../domain.types/clinical/biometrics/blood.glucose/blood.glucose.domain.model';

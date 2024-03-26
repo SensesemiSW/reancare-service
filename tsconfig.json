@@ -7,15 +7,15 @@
         "module": "commonjs",
         "esModuleInterop": true,
         "target": "es6",
-        "listFiles":true,
+        "listFiles": true,
         "noImplicitAny": false,
         "moduleResolution": "node",
         "sourceMap": true,
-        "noEmitHelpers":false,
+        "noEmitHelpers": false,
         "alwaysStrict": true,
         "suppressImplicitAnyIndexErrors": false,
         "forceConsistentCasingInFileNames": true,
-        "resolveJsonModule" : true,
+        "resolveJsonModule": true,
         "outDir": "dist/",
         "diagnostics": true,
         "baseUrl": ".",
@@ -24,13 +24,17 @@
                 "node_modules/*"
             ]
         },
-        "typeRoots": ["@types", "node_modules/@types"]
+        "typeRoots": [
+            "@types",
+            "node_modules/@types"
+        ]
     },
     "include": [
         "src/**/*",
-        "tests/api-tests/tests/*"
+        "tests/api-tests/tests/*",
+        "src.bg.worker/**/*"
     ],
-    "exclude":[ 
+    "exclude": [
         "node_modules"
     ],
 }

@@ -5,11 +5,12 @@ import { uuid } from '../../../../domain.types/miscellaneous/system.types';
 import { FoodConsumptionService } from '../../../../services/wellness/nutrition/food.consumption.service';
 import { Injector } from '../../../../startup/injector';
 import { FoodConsumptionValidator } from './food.consumption.validator';
-import { AwardsFactsService } from '../../../../modules/awards.facts/awards.facts.service';
+import { AwardsFactsService } from '../../../../../src.bg.worker/src.bg/modules/awards.facts/awards.facts.service';
 import { HelperRepo } from '../../../../database/sql/sequelize/repositories/common/helper.repo';
 import { TimeHelper } from '../../../../common/time.helper';
 import { DurationType } from '../../../../domain.types/miscellaneous/time.types';
-import { EHRNutritionService } from '../../../../modules/ehr.analytics/ehr.services/ehr.nutrition.service';
+import { EHRNutritionService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.nutrition.service';
+import { publishUpdateFoodConsumptionToQueue, publishAddFoodConsumptionToQueue, publishAddFoodConsumptionEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -40,7 +41,8 @@ export class FoodConsumptionController {
                 throw new ApiError(400, 'Cannot create record for nutrition!');
             }
 
-            await this._ehrNutritionService.addEHRRecordNutritionForAppNames(foodConsumption);
+            //await this._ehrNutritionService.addEHRRecordNutritionForAppNames(foodConsumption);
+            await publishAddFoodConsumptionEHRToQueue(foodConsumption)
 
             if (foodConsumption.UserResponse) {
                 var timestamp = foodConsumption.EndTime ?? foodConsumption.StartTime;
@@ -51,16 +53,27 @@ export class FoodConsumptionController {
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
                 const currentTimeZone = await HelperRepo.getPatientTimezone(foodConsumption.PatientUserId);
 
-                AwardsFactsService.addOrUpdateNutritionResponseFact({
-                    PatientUserId : foodConsumption.PatientUserId,
-                    Facts         : {
-                        UserResponse : foodConsumption.UserResponse,
+                // AwardsFactsService.addOrUpdateNutritionResponseFact({
+                //     PatientUserId : foodConsumption.PatientUserId,
+                //     Facts         : {
+                //         UserResponse : foodConsumption.UserResponse,
+                //     },
+                //     RecordId       : foodConsumption.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: foodConsumption.PatientUserId,
+                    Facts: {
+                        UserResponse: foodConsumption.UserResponse,
                     },
-                    RecordId       : foodConsumption.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: foodConsumption.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: await TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishAddFoodConsumptionToQueue(message)
             }
 
             ResponseHandler.success(request, response, 'Nutrition record created successfully!', 201, {
@@ -186,15 +199,25 @@ export class FoodConsumptionController {
                 //const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(updated.PatientUserId);
                 //const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
 
-                AwardsFactsService.addOrUpdateNutritionResponseFact({
-                    PatientUserId : updated.PatientUserId,
-                    Facts         : {
-                        UserResponse : updated.UserResponse,
+                // AwardsFactsService.addOrUpdateNutritionResponseFact({
+                //     PatientUserId : updated.PatientUserId,
+                //     Facts         : {
+                //         UserResponse : updated.UserResponse,
+                //     },
+                //     RecordId      : updated.id,
+                //     RecordDate    : timestamp,
+                //     RecordDateStr : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp)
+                // });
+                const message = {
+                    PatientUserId: updated.PatientUserId,
+                    Facts: {
+                        UserResponse: updated.UserResponse,
                     },
-                    RecordId      : updated.id,
-                    RecordDate    : timestamp,
-                    RecordDateStr : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp)
-                });
+                    RecordId: updated.id,
+                    RecordDate: timestamp,
+                    RecordDateStr: await TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp)
+                }
+                await publishUpdateFoodConsumptionToQueue(message)
             }
             ResponseHandler.success(request, response, 'Nutrition record updated successfully!', 200, {
                 FoodConsumption : updated,

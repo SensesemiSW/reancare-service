@@ -13,7 +13,9 @@ import { AssessmentHelperRepo } from '../../../../database/sql/sequelize/reposit
 import { CustomActionsHandler } from '../../../../custom/custom.actions.handler';
 import { AssessmentDto } from '../../../../domain.types/clinical/assessment/assessment.dto';
 import { Logger } from '../../../../common/logger';
-import { EHRAssessmentService } from '../../../../modules/ehr.analytics/ehr.services/ehr.assessment.service';
+import { EHRAssessmentService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.assessment.service';
+import { publishAnswerQuestionEHRToQueue, publishAnswerQuestionListEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
+
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +48,7 @@ export class AssessmentController {
             }
 
             ResponseHandler.success(request, response, 'Assessment record created successfully!', 201, {
-                Assessment : assessment,
+                Assessment: assessment,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -62,7 +64,7 @@ export class AssessmentController {
             }
 
             ResponseHandler.success(request, response, 'Assessment record retrieved successfully!', 200, {
-                Assessment : assessment,
+                Assessment: assessment,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -79,7 +81,7 @@ export class AssessmentController {
             const message = count === 0 ? 'No records found!' : `Total ${count} assessment records retrieved successfully!`;
 
             ResponseHandler.success(request, response, message, 200, {
-                AssessmentRecords : searchResults,
+                AssessmentRecords: searchResults,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -101,7 +103,7 @@ export class AssessmentController {
             }
 
             ResponseHandler.success(request, response, 'Assessment record updated successfully!', 200, {
-                Assessment : updated,
+                Assessment: updated,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -122,7 +124,7 @@ export class AssessmentController {
             }
 
             ResponseHandler.success(request, response, 'Assessment record deleted successfully!', 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -139,7 +141,7 @@ export class AssessmentController {
             const next = await this._service.startAssessment(id);
 
             ResponseHandler.success(request, response, 'Assessment started successfully!', 200, {
-                Next : next,
+                Next: next,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -156,9 +158,9 @@ export class AssessmentController {
             if (assessment.ScoringApplicable) {
                 var { score, reportUrl } = await this.generateScoreReport(assessment);
                 ResponseHandler.success(request, response, 'Assessment started successfully!', 200, {
-                    AssessmentId : assessment.id,
-                    Score        : score,
-                    ReportUrl    : reportUrl,
+                    AssessmentId: assessment.id,
+                    Score: score,
+                    ReportUrl: reportUrl,
                 });
             } else {
                 ResponseHandler.failure(request, response, `This assessment does not have scoring!`, 400);
@@ -179,7 +181,7 @@ export class AssessmentController {
             if (progressStatus === ProgressStatus.Pending) {
                 const next = await this._service.startAssessment(id);
                 ResponseHandler.success(request, response, 'Assessment next question retrieved successfully!', 200, {
-                    Next : next,
+                    Next: next,
                 });
             } else if (progressStatus === ProgressStatus.InProgress) {
                 const next = await this._service.getNextQuestion(id);
@@ -189,7 +191,7 @@ export class AssessmentController {
                     return;
                 }
                 ResponseHandler.success(request, response, 'Assessment next question retrieved successfully!', 200, {
-                    Next : next,
+                    Next: next,
                 });
             } else if (progressStatus === ProgressStatus.Completed) {
                 ResponseHandler.failure(request, response, 'The assessment is already completed!', 404);
@@ -216,7 +218,7 @@ export class AssessmentController {
                 throw new ApiError(404, 'Assessment question not found.');
             }
             ResponseHandler.success(request, response, 'Assessment question retrieved successfully!', 200, {
-                Question : question,
+                Question: question,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -262,7 +264,8 @@ export class AssessmentController {
                 }
             }
 
-            await this._ehrAssessmentService.addEHRRecordForAppNames(assessment);
+            //await this._ehrAssessmentService.addEHRRecordForAppNames(assessment);
+            await publishAnswerQuestionEHRToQueue(assessment)
 
             const message = isAssessmentCompleted
                 ? 'Assessment has completed successfully!'
@@ -330,7 +333,8 @@ export class AssessmentController {
                 }
             }
 
-            await this._ehrAssessmentService.addEHRRecordForAppNames(assessment);
+            //await this._ehrAssessmentService.addEHRRecordForAppNames(assessment);
+            await publishAnswerQuestionListEHRToQueue(assessment)
 
             const message = isAssessmentCompleted
                 ? 'Assessment has completed successfully!'
@@ -383,8 +387,8 @@ export class AssessmentController {
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const updatedAssessment = await this._service.update(assessment.id, {
-            ScoreDetails : scoreStr,
-            ReportUrl    : reportUrl,
+            ScoreDetails: scoreStr,
+            ReportUrl: reportUrl,
         });
 
         return { score, reportUrl };

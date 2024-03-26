@@ -15,20 +15,22 @@
         },
         {
             "args": [
-              "-u",
-              "tdd",
-              "--timeout",
-              "999999",
-              "--colors",
-              "${workspaceFolder}/dist/tests/api-tests/tests"
+                "-u",
+                "tdd",
+                "--timeout",
+                "999999",
+                "--colors",
+                "${workspaceFolder}/dist/tests/api-tests/tests"
             ],
             "internalConsoleOptions": "openOnSessionStart",
             "name": "Mocha Tests",
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "preLaunchTask": "tsc: build - tsconfig.json",
             "request": "launch",
-            "skipFiles": ["<node_internals>/**"],
-            "type": "node"
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
         },
         {
             "type": "node",
@@ -41,7 +43,22 @@
             "preLaunchTask": "tsc: build - tsconfig.json",
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
-            ]
+            ],
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Worker",
+            "sourceMaps": true,
+            "smartStep": true,
+            "internalConsoleOptions": "openOnSessionStart",
+            "program": "${workspaceFolder}/src.bg.worker/src.bg/index.ts",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ],
+            "envFile": "${workspaceFolder}/bgworker.env"
         },
         {
             "type": "node",
@@ -55,6 +72,6 @@
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
-        }
+        },
     ]
 }

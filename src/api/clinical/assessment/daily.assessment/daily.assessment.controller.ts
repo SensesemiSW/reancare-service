@@ -5,7 +5,8 @@ import { DailyAssessmentService } from '../../../../services/clinical/daily.asse
 import { DailyAssessmentValidator } from './daily.assessment.validator';
 import { Injector } from '../../../../startup/injector';
 import { PatientService } from '../../../../services/users/patient/patient.service';
-import { EHRHowDoYouFeelService } from '../../../../modules/ehr.analytics/ehr.services/ehr.how.do.you.feel.service';
+import { EHRHowDoYouFeelService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.how.do.you.feel.service';
+import { publishAddDailyAssessmentEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -35,10 +36,11 @@ export class DailyAssessmentController {
                 throw new ApiError(400, 'Cannot create record for daily assessment!');
             }
 
-            await this._ehrHowDoYouFeelService.addEHRDailyAssessmentForAppNames(dailyAssessment);
+            //await this._ehrHowDoYouFeelService.addEHRDailyAssessmentForAppNames(dailyAssessment);
+            await publishAddDailyAssessmentEHRToQueue(dailyAssessment)
 
             ResponseHandler.success(request, response, 'Daily assessment record created successfully!', 201, {
-                DailyAssessment : dailyAssessment,
+                DailyAssessment: dailyAssessment,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);

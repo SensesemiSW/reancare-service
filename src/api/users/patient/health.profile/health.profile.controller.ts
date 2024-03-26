@@ -9,7 +9,8 @@ import { Injector } from '../../../../startup/injector';
 import { HealthProfileValidator } from './health.profile.validator';
 import { PatientService } from '../../../../services/users/patient/patient.service';
 import { UserDeviceDetailsService } from '../../../../services/users/user/user.device.details.service';
-import { EHRPatientService } from '../../../../modules/ehr.analytics/ehr.services/ehr.patient.service';
+import { EHRPatientService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.patient.service';
+import { publishUpdateHealthProfileByPatientUserIdEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -66,7 +67,8 @@ export class HealthProfileController {
                 throw new ApiError(400, 'Unable to update Patient health profile record!');
             }
 
-            await this._ehrPatientService.addEHRRecordHealthProfileForAppNames(updated);
+            //await this._ehrPatientService.addEHRRecordHealthProfileForAppNames(updated);
+            await publishUpdateHealthProfileByPatientUserIdEHRToQueue(updated)
 
             ResponseHandler.success(request, response, 'Patient health profile record updated successfully!', 200, {
                 HealthProfile : updated,

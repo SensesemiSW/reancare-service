@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { ConfigurationManager } from "../../config/configuration.manager";
-import { BodyWeightStore } from "../../modules/ehr/services/body.weight.store";
+import { BodyWeightStore } from "../../../src.bg.worker/src.bg/modules/ehr/services/body.weight.store";
 import { Injector } from "../../startup/injector";
 import { ActivityDomainModel, ActivityType } from "../../domain.types/webhook/activity.domain.model";
 import { PhysicalActivityCategories, Intensity } from "../../domain.types/wellness/exercise/physical.activity/physical.activity.types";

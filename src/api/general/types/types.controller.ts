@@ -3,7 +3,7 @@ import { ApiError } from '../../../common/api.error';
 import { ResponseHandler } from '../../../common/handlers/response.handler';
 import { BloodGroupList, EthnicityTypeList, MaritalStatusList, RaceTypeList, SeverityList, uuid } from '../../../domain.types/miscellaneous/system.types';
 import { TypesService } from '../../../services/general/types.service';
-import { AwardsFactsService } from '../../../modules/awards.facts/awards.facts.service';
+import { AwardsFactsService } from '../../../../src.bg.worker/src.bg/modules/awards.facts/awards.facts.service';
 import { ReminderTypeList, RepeatAfterEveryUnitList } from '../../../domain.types/general/reminder/reminder.domain.model';
 import { TypesValidator } from './types.validator';
 import { UserEngagementCategoryList } from '../../../domain.types/statistics/user.engagement.types';

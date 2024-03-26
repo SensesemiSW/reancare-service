@@ -13,7 +13,7 @@ import { DoctorDomainModel } from '../../domain.types/users/doctor/doctor.domain
 import { DoctorDetailsDto, DoctorDto } from '../../domain.types/users/doctor/doctor.dto';
 import { DoctorDetailsSearchResults, DoctorSearchFilters, DoctorSearchResults } from '../../domain.types/users/doctor/doctor.search.types';
 import { Roles } from '../../domain.types/role/role.types';
-import { DoctorStore } from '../../modules/ehr/services/doctor.store';
+import { DoctorStore } from '../../../src.bg.worker/src.bg/modules/ehr/services/doctor.store';
 import { Injector } from '../../startup/injector';
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////

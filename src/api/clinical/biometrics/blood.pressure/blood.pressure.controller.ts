@@ -11,11 +11,12 @@ import { PersonService } from '../../../../services/person/person.service';
 import { HelperRepo } from '../../../../database/sql/sequelize/repositories/common/helper.repo';
 import { TimeHelper } from '../../../../common/time.helper';
 import { DurationType } from '../../../../domain.types/miscellaneous/time.types';
-import { AwardsFactsService } from '../../../../modules/awards.facts/awards.facts.service';
+import { AwardsFactsService } from '../../../../../src.bg.worker/src.bg/modules/awards.facts/awards.facts.service';
 import { Injector } from '../../../../startup/injector';
 import { PatientService } from '../../../../services/users/patient/patient.service';
 import { UserDeviceDetailsService } from '../../../../services/users/user/user.device.details.service';
-import { EHRVitalService } from '../../../../modules/ehr.analytics/ehr.services/ehr.vital.service';
+import { EHRVitalService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.vital.service';
+import { publishAddBloodPressureEHRToQueue, publishAddBloodPressureToQueue, publishDeleteBloodPressureEHRToQueue, publishUpdateBloodPressureEHRToQueue, publishUpdateBloodPressureToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -48,7 +49,8 @@ export class BloodPressureController {
                 throw new ApiError(400, 'Cannot create record for blood pressure!');
             }
 
-            await this._ehrVitalService.addEHRBloodPressureForAppNames(bloodPressure);
+            //await this._ehrVitalService.addEHRBloodPressureForAppNames(bloodPressure);
+            await publishAddBloodPressureEHRToQueue(bloodPressure)
 
             /*if (model.Systolic > 120 || model.Diastolic > 80) {
                 this.sendBPMessage(model.PatientUserId, model);
@@ -65,22 +67,36 @@ export class BloodPressureController {
                 const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(bloodPressure.PatientUserId);
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
 
-                AwardsFactsService.addOrUpdateVitalFact({
-                    PatientUserId : bloodPressure.PatientUserId,
-                    Facts         : {
-                        VitalName           : "BloodPressure",
-                        VitalPrimaryValue   : bloodPressure.Systolic,
-                        VitalSecondaryValue : bloodPressure.Diastolic,
-                        Unit                : bloodPressure.Unit,
+                // AwardsFactsService.addOrUpdateVitalFact({
+                //     PatientUserId : bloodPressure.PatientUserId,
+                //     Facts         : {
+                //         VitalName           : "BloodPressure",
+                //         VitalPrimaryValue   : bloodPressure.Systolic,
+                //         VitalSecondaryValue : bloodPressure.Diastolic,
+                //         Unit                : bloodPressure.Unit,
+                //     },
+                //     RecordId       : bloodPressure.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: bloodPressure.PatientUserId,
+                    Facts: {
+                        VitalName: "BloodPressure",
+                        VitalPrimaryValue: bloodPressure.Systolic,
+                        VitalSecondaryValue: bloodPressure.Diastolic,
+                        Unit: bloodPressure.Unit,
                     },
-                    RecordId       : bloodPressure.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: bloodPressure.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: await TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishAddBloodPressureToQueue(message)
             }
             ResponseHandler.success(request, response, 'Blood pressure record created successfully!', 201, {
-                BloodPressure : bloodPressure,
+                BloodPressure: bloodPressure,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -97,7 +113,7 @@ export class BloodPressureController {
             }
 
             ResponseHandler.success(request, response, 'Blood pressure record retrieved successfully!', 200, {
-                BloodPressure : bloodPressure,
+                BloodPressure: bloodPressure,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -121,7 +137,8 @@ export class BloodPressureController {
                     : `Total ${count} blood pressure records retrieved successfully!`;
 
             ResponseHandler.success(request, response, message, 200, {
-                BloodPressureRecords : searchResults });
+                BloodPressureRecords: searchResults
+            });
 
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -143,7 +160,8 @@ export class BloodPressureController {
                 throw new ApiError(400, 'Unable to update blood pressure record!');
             }
 
-            await this._ehrVitalService.addEHRBloodPressureForAppNames(updated);
+            //await this._ehrVitalService.addEHRBloodPressureForAppNames(updated);
+            await publishUpdateBloodPressureEHRToQueue(updated)
 
             // Adding record to award service
             if (updated.Systolic || updated.Diastolic) {
@@ -155,22 +173,36 @@ export class BloodPressureController {
                 const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(updated.PatientUserId);
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
 
-                AwardsFactsService.addOrUpdateVitalFact({
-                    PatientUserId : updated.PatientUserId,
-                    Facts         : {
-                        VitalName           : "BloodPressure",
-                        VitalPrimaryValue   : updated.Systolic,
-                        VitalSecondaryValue : updated.Diastolic,
-                        Unit                : updated.Unit,
+                // AwardsFactsService.addOrUpdateVitalFact({
+                //     PatientUserId : updated.PatientUserId,
+                //     Facts         : {
+                //         VitalName           : "BloodPressure",
+                //         VitalPrimaryValue   : updated.Systolic,
+                //         VitalSecondaryValue : updated.Diastolic,
+                //         Unit                : updated.Unit,
+                //     },
+                //     RecordId       : updated.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: updated.PatientUserId,
+                    Facts: {
+                        VitalName: "BloodPressure",
+                        VitalPrimaryValue: updated.Systolic,
+                        VitalSecondaryValue: updated.Diastolic,
+                        Unit: updated.Unit,
                     },
-                    RecordId       : updated.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: updated.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishUpdateBloodPressureToQueue(message)
             }
             ResponseHandler.success(request, response, 'Blood pressure record updated successfully!', 200, {
-                BloodPressure : updated,
+                BloodPressure: updated,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -192,10 +224,11 @@ export class BloodPressureController {
             }
 
             // delete ehr record
-            this._ehrVitalService.deleteRecord(existingRecord.id);
+            //this._ehrVitalService.deleteRecord(existingRecord.id);
+            await publishDeleteBloodPressureEHRToQueue(existingRecord.id)
 
             ResponseHandler.success(request, response, 'Blood pressure record deleted successfully!', 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -208,7 +241,7 @@ export class BloodPressureController {
 
     private sendBPMessage = async (patientUserId: uuid, model: BloodPressureDomainModel) => {
 
-        const patient  = await this._patientService.getByUserId(patientUserId);
+        const patient = await this._patientService.getByUserId(patientUserId);
         const phoneNumber = patient.User.Person.Phone;
         const person = await this._personService.getById(patient.User.PersonId);
         var userFirstName = 'user';

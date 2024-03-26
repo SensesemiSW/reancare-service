@@ -8,8 +8,9 @@ import { BodyTemperatureValidator } from './body.temperature.validator';
 import { HelperRepo } from '../../../../database/sql/sequelize/repositories/common/helper.repo';
 import { TimeHelper } from '../../../../common/time.helper';
 import { DurationType } from '../../../../domain.types/miscellaneous/time.types';
-import { AwardsFactsService } from '../../../../modules/awards.facts/awards.facts.service';
-import { EHRVitalService } from '../../../../modules/ehr.analytics/ehr.services/ehr.vital.service';
+import { AwardsFactsService } from '../../../../../src.bg.worker/src.bg/modules/awards.facts/awards.facts.service';
+import { EHRVitalService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.vital.service';
+import { publishAddBodyTemperatureToQueue, publishBodyTemperatureEHRToQueue, publishDeleteBodyTemperatureEHRToQueue, publishUpdateBodyTemperatureEHRToQueue, publishUpdateBodyTemperatureToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +36,8 @@ export class BodyTemperatureController {
             if (bodyTemperature == null) {
                 throw new ApiError(400, 'Cannot create record for body temperature!');
             }
-            await this._ehrVitalService.addEHRBodyTemperatureForAppNames(bodyTemperature);
+            //await this._ehrVitalService.addEHRBodyTemperatureForAppNames(bodyTemperature);
+            await publishBodyTemperatureEHRToQueue(bodyTemperature)
 
             // Adding record to award service
             if (bodyTemperature.BodyTemperature) {
@@ -47,21 +49,34 @@ export class BodyTemperatureController {
                 const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(bodyTemperature.PatientUserId);
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
 
-                AwardsFactsService.addOrUpdateVitalFact({
-                    PatientUserId : bodyTemperature.PatientUserId,
-                    Facts         : {
-                        VitalName         : "BodyTemperature",
-                        VitalPrimaryValue : bodyTemperature.BodyTemperature,
-                        Unit              : bodyTemperature.Unit,
+                // AwardsFactsService.addOrUpdateVitalFact({
+                //     PatientUserId : bodyTemperature.PatientUserId,
+                //     Facts         : {
+                //         VitalName         : "BodyTemperature",
+                //         VitalPrimaryValue : bodyTemperature.BodyTemperature,
+                //         Unit              : bodyTemperature.Unit,
+                //     },
+                //     RecordId       : bodyTemperature.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: bodyTemperature.PatientUserId,
+                    Facts: {
+                        VitalName: "BodyTemperature",
+                        VitalPrimaryValue: bodyTemperature.BodyTemperature,
+                        Unit: bodyTemperature.Unit,
                     },
-                    RecordId       : bodyTemperature.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: bodyTemperature.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: await TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishAddBodyTemperatureToQueue(message)
             }
             ResponseHandler.success(request, response, 'Body temperature record created successfully!', 201, {
-                BodyTemperature : bodyTemperature,
+                BodyTemperature: bodyTemperature,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -78,7 +93,7 @@ export class BodyTemperatureController {
             }
 
             ResponseHandler.success(request, response, 'Body temperature record retrieved successfully!', 200, {
-                BodyTemperature : bodyTemperature,
+                BodyTemperature: bodyTemperature,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -97,7 +112,8 @@ export class BodyTemperatureController {
                     : `Total ${count} body temperature records retrieved successfully!`;
 
             ResponseHandler.success(request, response, message, 200, {
-                BodyTemperatureRecords : searchResults });
+                BodyTemperatureRecords: searchResults
+            });
 
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -118,7 +134,8 @@ export class BodyTemperatureController {
             if (updated == null) {
                 throw new ApiError(400, 'Unable to update body temperature record!');
             }
-            await this._ehrVitalService.addEHRBodyTemperatureForAppNames(updated);
+            //await this._ehrVitalService.addEHRBodyTemperatureForAppNames(updated);
+            await publishUpdateBodyTemperatureEHRToQueue(updated)
 
             // Adding record to award service
             if (updated.BodyTemperature) {
@@ -130,21 +147,34 @@ export class BodyTemperatureController {
                 const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(updated.PatientUserId);
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
 
-                AwardsFactsService.addOrUpdateVitalFact({
-                    PatientUserId : updated.PatientUserId,
-                    Facts         : {
-                        VitalName         : "BodyTemperature",
-                        VitalPrimaryValue : updated.BodyTemperature,
-                        Unit              : updated.Unit,
+                // AwardsFactsService.addOrUpdateVitalFact({
+                //     PatientUserId : updated.PatientUserId,
+                //     Facts         : {
+                //         VitalName         : "BodyTemperature",
+                //         VitalPrimaryValue : updated.BodyTemperature,
+                //         Unit              : updated.Unit,
+                //     },
+                //     RecordId       : updated.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: updated.PatientUserId,
+                    Facts: {
+                        VitalName: "BodyTemperature",
+                        VitalPrimaryValue: updated.BodyTemperature,
+                        Unit: updated.Unit,
                     },
-                    RecordId       : updated.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: updated.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishUpdateBodyTemperatureToQueue(message)
             }
             ResponseHandler.success(request, response, 'Body temperature record updated successfully!', 200, {
-                BodyTemperature : updated,
+                BodyTemperature: updated,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -166,10 +196,11 @@ export class BodyTemperatureController {
             }
 
             // delete ehr record
-            this._ehrVitalService.deleteRecord(existingRecord.id);
+            //this._ehrVitalService.deleteRecord(existingRecord.id);
+            await publishDeleteBodyTemperatureEHRToQueue(existingRecord.id)
 
             ResponseHandler.success(request, response, 'Body temperature record deleted successfully!', 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);

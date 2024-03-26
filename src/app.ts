@@ -7,16 +7,17 @@ import { Router } from './api/router';
 import { Helper } from './common/helper';
 import { Logger } from './common/logger';
 import { ConfigurationManager } from "./config/configuration.manager";
-import { EHRDbConnector } from './modules/ehr.analytics/ehr.db.connector';
-import { AwardsFactsDBConnector } from './modules/awards.facts/awards.facts.db.connector';
+import { EHRDbConnector } from '../src.bg.worker/src.bg/modules/ehr.analytics/ehr.db.connector';
+import { AwardsFactsDBConnector } from '../src.bg.worker/src.bg/modules/awards.facts/awards.facts.db.connector';
 import { PrimaryDatabaseConnector } from './database/database.connector';
 import { Loader } from './startup/loader';
-import { AwardsFactsService } from './modules/awards.facts/awards.facts.service';
+import { AwardsFactsService } from '../src.bg.worker/src.bg/modules/awards.facts/awards.facts.service';
 import { DatabaseClient } from './common/database.utils/dialect.clients/database.client';
 import { DatabaseSchemaType } from './common/database.utils/database.config';
 import { Injector } from './startup/injector';
 import ClientAppAuthMiddleware from './middlewares/client.app.auth.middleware';
 import { errorHandlerMiddleware } from './middlewares/error.handling.middleware';
+import { initializeRabbitMQ } from './rabbitmq/rabbitmq.connection';
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -41,7 +42,7 @@ export default class Application {
         return this._app;
     }
 
-    public start = async(): Promise<void> => {
+    public start = async (): Promise<void> => {
         try {
 
             //Load configurations
@@ -69,6 +70,9 @@ export default class Application {
             //Seed the service
             await Loader.seeder.init();
 
+            // RabbitMQ connection
+            await initializeRabbitMQ()
+
             if (process.env.NODE_ENV !== 'test') {
                 //Set-up cron jobs
                 await Loader.scheduler.schedule();
@@ -92,7 +96,7 @@ export default class Application {
             await this.listen();
 
         }
-        catch (error){
+        catch (error) {
             Logger.instance().log('An error occurred while starting reancare-api service.' + error.message);
         }
     };
@@ -102,7 +106,7 @@ export default class Application {
         return new Promise((resolve, reject) => {
             try {
                 this._app.use(express.urlencoded({ limit: '50mb', extended: true }));
-                this._app.use(express.json( { limit: '50mb' }));
+                this._app.use(express.json({ limit: '50mb' }));
                 this._app.use(helmet());
                 this._app.use(cors());
 
@@ -111,12 +115,12 @@ export default class Application {
                 const MAX_UPLOAD_FILE_SIZE = ConfigurationManager.MaxUploadFileSize();
 
                 this._app.use(fileUpload({
-                    limits            : { fileSize: MAX_UPLOAD_FILE_SIZE },
-                    preserveExtension : true,
-                    createParentPath  : true,
-                    parseNested       : true,
-                    useTempFiles      : true,
-                    tempFileDir       : '/tmp/uploads/'
+                    limits: { fileSize: MAX_UPLOAD_FILE_SIZE },
+                    preserveExtension: true,
+                    createParentPath: true,
+                    parseNested: true,
+                    useTempFiles: true,
+                    tempFileDir: '/tmp/uploads/'
                 }));
                 resolve(true);
             }

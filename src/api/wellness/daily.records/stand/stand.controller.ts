@@ -5,7 +5,8 @@ import { uuid } from '../../../../domain.types/miscellaneous/system.types';
 import { StandService } from '../../../../services/wellness/daily.records/stand.service';
 import { Injector } from '../../../../startup/injector';
 import { StandValidator } from './stand.validator';
-import { EHRPhysicalActivityService } from '../../../../modules/ehr.analytics/ehr.services/ehr.physical.activity.service';
+import { EHRPhysicalActivityService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.physical.activity.service';
+import { publishAddStandEHRToQueue, publishUpdateStandEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -33,7 +34,8 @@ export class StandController {
                 throw new ApiError(400, 'Cannot create stand record!');
             }
 
-            await this._ehrPhysicalActivityService.addEHRRecordStandForAppNames(stand);
+            //await this._ehrPhysicalActivityService.addEHRRecordStandForAppNames(stand);
+            await publishAddStandEHRToQueue(stand)
 
             ResponseHandler.success(request, response, 'Stand record created successfully!', 201, {
                 Stand : stand,
@@ -97,7 +99,8 @@ export class StandController {
                 throw new ApiError(400, 'Unable to update stand record!');
             }
 
-            await this._ehrPhysicalActivityService.addEHRRecordStandForAppNames(updated);
+            //await this._ehrPhysicalActivityService.addEHRRecordStandForAppNames(updated);
+            await publishUpdateStandEHRToQueue(updated)
 
             ResponseHandler.success(request, response, 'Stand record updated successfully!', 200, {
                 Stand : updated,

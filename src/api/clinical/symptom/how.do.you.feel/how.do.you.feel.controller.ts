@@ -5,7 +5,7 @@ import { ResponseHandler } from '../../../../common/handlers/response.handler';
 import { HowDoYouFeelService } from '../../../../services/clinical/symptom/how.do.you.feel.service';
 import { Injector } from '../../../../startup/injector';
 import { HowDoYouFeelValidator } from './how.do.you.feel.validator';
-import { EHRHowDoYouFeelService } from '../../../../modules/ehr.analytics/ehr.services/ehr.how.do.you.feel.service';
+import { EHRHowDoYouFeelService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.how.do.you.feel.service';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 

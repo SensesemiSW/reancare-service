@@ -8,8 +8,9 @@ import { BloodOxygenSaturationValidator } from './blood.oxygen.saturation.valida
 import { HelperRepo } from '../../../../database/sql/sequelize/repositories/common/helper.repo';
 import { TimeHelper } from '../../../../common/time.helper';
 import { DurationType } from '../../../../domain.types/miscellaneous/time.types';
-import { AwardsFactsService } from '../../../../modules/awards.facts/awards.facts.service';
-import { EHRVitalService } from '../../../../modules/ehr.analytics/ehr.services/ehr.vital.service';
+import { AwardsFactsService } from '../../../../../src.bg.worker/src.bg/modules/awards.facts/awards.facts.service';
+import { EHRVitalService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.vital.service';
+import { publishAddBloodOxygenSaturationToQueue, publishAddBloodSaturationEHRToQueue, publishDeleteBloodSaturationEHRToQueue, publishUpdateBloodOxygenSaturationToQueue, publishUpdateBloodSaturationEHRToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +36,8 @@ export class BloodOxygenSaturationController {
             if (bloodOxygenSaturation == null) {
                 throw new ApiError(400, 'Cannot create record for blood oxygen saturation!');
             }
-            await this._ehrVitalService.addEHRBloodOxygenSaturationForAppNames(bloodOxygenSaturation);
+            //await this._ehrVitalService.addEHRBloodOxygenSaturationForAppNames(bloodOxygenSaturation);
+            await publishAddBloodSaturationEHRToQueue(bloodOxygenSaturation)
 
             // Adding record to award service
             if (bloodOxygenSaturation.BloodOxygenSaturation) {
@@ -47,21 +49,34 @@ export class BloodOxygenSaturationController {
                 const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(bloodOxygenSaturation.PatientUserId);
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
 
-                AwardsFactsService.addOrUpdateVitalFact({
-                    PatientUserId : bloodOxygenSaturation.PatientUserId,
-                    Facts         : {
-                        VitalName         : "BloodOxygenSaturation",
-                        VitalPrimaryValue : bloodOxygenSaturation.BloodOxygenSaturation,
-                        Unit              : bloodOxygenSaturation.Unit,
+                // AwardsFactsService.addOrUpdateVitalFact({
+                //     PatientUserId : bloodOxygenSaturation.PatientUserId,
+                //     Facts         : {
+                //         VitalName         : "BloodOxygenSaturation",
+                //         VitalPrimaryValue : bloodOxygenSaturation.BloodOxygenSaturation,
+                //         Unit              : bloodOxygenSaturation.Unit,
+                //     },
+                //     RecordId       : bloodOxygenSaturation.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: bloodOxygenSaturation.PatientUserId,
+                    Facts: {
+                        VitalName: "BloodOxygenSaturation",
+                        VitalPrimaryValue: bloodOxygenSaturation.BloodOxygenSaturation,
+                        Unit: bloodOxygenSaturation.Unit,
                     },
-                    RecordId       : bloodOxygenSaturation.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: bloodOxygenSaturation.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: await TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishAddBloodOxygenSaturationToQueue(message)
             }
             ResponseHandler.success(request, response, 'Blood oxygen saturation record created successfully!', 201, {
-                BloodOxygenSaturation : bloodOxygenSaturation,
+                BloodOxygenSaturation: bloodOxygenSaturation,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -78,7 +93,7 @@ export class BloodOxygenSaturationController {
             }
 
             ResponseHandler.success(request, response, 'Blood oxygen saturation record retrieved successfully!', 200, {
-                BloodOxygenSaturation : bloodOxygenSaturation,
+                BloodOxygenSaturation: bloodOxygenSaturation,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -99,7 +114,8 @@ export class BloodOxygenSaturationController {
                     : `Total ${count} blood oxygen saturation records retrieved successfully!`;
 
             ResponseHandler.success(request, response, message, 200, {
-                BloodOxygenSaturationRecords : searchResults });
+                BloodOxygenSaturationRecords: searchResults
+            });
 
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -122,7 +138,8 @@ export class BloodOxygenSaturationController {
                 throw new ApiError(400, 'Unable to update blood oxygen saturation record!');
             }
 
-            await this._ehrVitalService.addEHRBloodOxygenSaturationForAppNames(updated);
+            //await this._ehrVitalService.addEHRBloodOxygenSaturationForAppNames(updated);
+            await publishUpdateBloodSaturationEHRToQueue(updated)
 
             // Adding record to award service
             if (updated.BloodOxygenSaturation) {
@@ -134,21 +151,34 @@ export class BloodOxygenSaturationController {
                 const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(updated.PatientUserId);
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
 
-                AwardsFactsService.addOrUpdateVitalFact({
-                    PatientUserId : updated.PatientUserId,
-                    Facts         : {
-                        VitalName         : "BloodOxygenSaturation",
-                        VitalPrimaryValue : updated.BloodOxygenSaturation,
-                        Unit              : updated.Unit,
+                // AwardsFactsService.addOrUpdateVitalFact({
+                //     PatientUserId : updated.PatientUserId,
+                //     Facts         : {
+                //         VitalName         : "BloodOxygenSaturation",
+                //         VitalPrimaryValue : updated.BloodOxygenSaturation,
+                //         Unit              : updated.Unit,
+                //     },
+                //     RecordId       : updated.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: updated.PatientUserId,
+                    Facts: {
+                        VitalName: "BloodOxygenSaturation",
+                        VitalPrimaryValue: updated.BloodOxygenSaturation,
+                        Unit: updated.Unit,
                     },
-                    RecordId       : updated.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: updated.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishUpdateBloodOxygenSaturationToQueue(message)
             }
             ResponseHandler.success(request, response, 'Blood oxygen saturation record updated successfully!', 200, {
-                BloodOxygenSaturation : updated,
+                BloodOxygenSaturation: updated,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -170,10 +200,11 @@ export class BloodOxygenSaturationController {
             }
 
             // delete ehr record
-            this._ehrVitalService.deleteRecord(existingRecord.id);
+            //this._ehrVitalService.deleteRecord(existingRecord.id);
+            await publishDeleteBloodSaturationEHRToQueue(existingRecord.id)
 
             ResponseHandler.success(request, response, 'Blood oxygen saturation record deleted successfully!', 200, {
-                Deleted : true,
+                Deleted: true,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);

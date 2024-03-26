@@ -19,7 +19,7 @@ import { UserTaskDomainModel } from "../../../domain.types/users/user.task/user.
 import { IUserActionService } from "../../users/user/user.action.service.interface";
 import { Loader } from "../../../startup/loader";
 import { uuid } from "../../../domain.types/miscellaneous/system.types";
-import { MedicationConsumptionStore } from "../../../modules/ehr/services/medication.consumption.store";
+import { MedicationConsumptionStore } from "../../../../src.bg.worker/src.bg/modules/ehr/services/medication.consumption.store";
 import { ConfigurationManager } from "../../../config/configuration.manager";
 import { IPersonRepo } from "../../../database/repository.interfaces/person/person.repo.interface";
 import * as MessageTemplates from '../../../modules/communication/message.template/message.templates.json';

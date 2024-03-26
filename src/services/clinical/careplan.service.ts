@@ -32,8 +32,9 @@ import { Loader } from "../../startup/loader";
 import { IDonorRepo } from "../../database/repository.interfaces/assorted/blood.donation/donor.repo.interface";
 import { IDonationCommunicationRepo } from "../../database/repository.interfaces/assorted/blood.donation/communication.repo.interface";
 import { PatientDetailsDto } from "../../domain.types/users/patient/patient/patient.dto";
-import { EHRCareplanActivityService } from "../../modules/ehr.analytics/ehr.services/ehr.careplan.activity.service";
+import { EHRCareplanActivityService } from "../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.careplan.activity.service";
 import { Injector } from "../../startup/injector";
+import { publishEnrollAndCreateTaskEHRToQueue } from "../../../src/rabbitmq/rabbitmq.publisher";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -597,7 +598,14 @@ export class CareplanService implements IUserActionService {
         Logger.instance().log(`Careplan Activities: ${JSON.stringify(careplanActivities)}`);
 
         var patientDetails: PatientDetailsDto = await this._patientRepo.getByUserId(dto.PatientUserId);
-        await this._ehrCareplanActivityService.addCareplanActivitiesToEHR(careplanActivities, patientDetails);
+        //await this._ehrCareplanActivityService.addCareplanActivitiesToEHR(careplanActivities, patientDetails);
+        
+        const message = {
+            CareplanActivities : careplanActivities,
+            PatientDetails : patientDetails
+        }
+
+        await publishEnrollAndCreateTaskEHRToQueue(message)
 
         await this.createScheduledUserTasks(enrollmentDetails.PatientUserId, careplanActivities);
 

@@ -14,7 +14,7 @@ import { PatientDetailsDto, PatientDto } from '../../../domain.types/users/patie
 import { PatientDetailsSearchResults, PatientSearchFilters, PatientSearchResults } from '../../../domain.types/users/patient/patient/patient.search.types';
 import { PersonDetailsDto } from '../../../domain.types/person/person.dto';
 import { Roles } from '../../../domain.types/role/role.types';
-import { PatientStore } from '../../../modules/ehr/services/patient.store';
+import { PatientStore } from '../../../../src.bg.worker/src.bg/modules/ehr/services/patient.store';
 import { Injector } from '../../../startup/injector';
 import { AuthHandler } from '../../../auth/auth.handler';
 

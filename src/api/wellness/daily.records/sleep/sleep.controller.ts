@@ -8,9 +8,10 @@ import { SleepValidator } from './sleep.validator';
 import { HelperRepo } from '../../../../database/sql/sequelize/repositories/common/helper.repo';
 import { TimeHelper } from '../../../../common/time.helper';
 import { DurationType } from '../../../../domain.types/miscellaneous/time.types';
-import { AwardsFactsService } from '../../../../modules/awards.facts/awards.facts.service';
-import { EHRMentalWellBeingService } from '../../../../modules/ehr.analytics/ehr.services/ehr.mental.wellbeing.service';
+import { AwardsFactsService } from '../../../../../src.bg.worker/src.bg/modules/awards.facts/awards.facts.service';
+import { EHRMentalWellBeingService } from '../../../../../src.bg.worker/src.bg/modules/ehr.analytics/ehr.services/ehr.mental.wellbeing.service';
 import { SleepDto } from '../../../../domain.types/wellness/daily.records/sleep/sleep.dto';
+import { publishAddSleeptEHRToQueue, publishAddSleepToQueue } from '../../../../../src/rabbitmq/rabbitmq.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +47,8 @@ export class SleepController{
                 throw new ApiError(400, 'Cannot create record for sleep!');
             }
 
-            await this._ehrMentalWellbeingService.addEHRSleepForAppNames(sleep);
+            //await this._ehrMentalWellbeingService.addEHRSleepForAppNames(sleep);
+            await publishAddSleeptEHRToQueue(sleep)
 
             if (sleep.SleepDuration) {
                 var timestamp = sleep.RecordDate;
@@ -57,18 +59,31 @@ export class SleepController{
                 const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(sleep.PatientUserId);
                 const tempDate = TimeHelper.addDuration(timestamp, offsetMinutes, DurationType.Minute);
 
-                AwardsFactsService.addOrUpdateMentalHealthResponseFact({
-                    PatientUserId : sleep.PatientUserId,
-                    Facts         : {
-                        Name     : 'Sleep',
-                        Duration : sleep.SleepDuration,
-                        Unit     : sleep.Unit,
+                // AwardsFactsService.addOrUpdateMentalHealthResponseFact({
+                //     PatientUserId : sleep.PatientUserId,
+                //     Facts         : {
+                //         Name     : 'Sleep',
+                //         Duration : sleep.SleepDuration,
+                //         Unit     : sleep.Unit,
+                //     },
+                //     RecordId       : sleep.id,
+                //     RecordDate     : tempDate,
+                //     RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                //     RecordTimeZone : currentTimeZone,
+                // });
+                const message = {
+                    PatientUserId: sleep.PatientUserId,
+                    Facts: {
+                        Name: 'Sleep',
+                        Duration: sleep.SleepDuration,
+                        Unit: sleep.Unit,
                     },
-                    RecordId       : sleep.id,
-                    RecordDate     : tempDate,
-                    RecordDateStr  : TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
-                    RecordTimeZone : currentTimeZone,
-                });
+                    RecordId: sleep.id,
+                    RecordDate: tempDate,
+                    RecordDateStr: await TimeHelper.formatDateToLocal_YYYY_MM_DD(timestamp),
+                    RecordTimeZone: currentTimeZone,
+                }
+                await publishAddSleepToQueue(message)
             }
 
             ResponseHandler.success(request, response, 'Sleep record created successfully!', 201, {
