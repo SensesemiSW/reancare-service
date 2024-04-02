@@ -556,7 +556,6 @@ export async function consumeUserFinishTaskEHRFromQueue(): Promise<void> {
 
 
 export async function initializebgrabbitconsumer() {
-    console.log('Waiting for messages in RabbitMQ queue...');
     //awards
     await consumeAddBloodGlucoseFromQueue()
     await consumeUpdateBloodGlucoseFromQueue()

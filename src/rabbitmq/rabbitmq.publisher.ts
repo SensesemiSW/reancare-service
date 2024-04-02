@@ -75,22 +75,6 @@ export async function publishMarkAsMissedMedicationFactToQueue(
     await publishAwardEventToQueue('mark_as_missed_medication_queue', message);
 }
 
-
-// export async function publishAddUpdatePatientToQueue(
-//     patientUserId: uuid,
-//     details: EHRStaticRecordDomainModel,
-//     appName?: string
-// ): Promise<void> {
-//     const message = { patientUserId, details, appName };
-//     await publishAwardEventToQueue('add_patient_queue', message);
-// }
-
-// export async function publishDeletePatientToQueue(
-//     userId: string
-// ): Promise<void> {
-//     await publishAwardEventToQueue('delete_patient_queue', userId);
-// }
-
 export async function publishAddBodyGlucoseToQueue(
     message: any
 ): Promise<void> {
@@ -208,9 +192,9 @@ export async function publishUpdateFoodConsumptionToQueue(
 
 async function publishEHREventToQueue(queueName: string, message: any): Promise<void> {
     try {
-        const connection = getRabbitMQConnection();
-
+        
         // Create a channel from the connection
+        const connection = getRabbitMQConnection();
         const channel = await connection.createChannel();
 
         // Assert the queue to make sure it exists, otherwise create it

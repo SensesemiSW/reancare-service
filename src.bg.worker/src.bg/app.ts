@@ -45,7 +45,7 @@ export default class MainApplication {
         await Loader.init();
 
         //Connect databases
-        await connectDatabase_Primary();
+        //await connectDatabase_Primary();
 
         if (ConfigurationManager.EHRAnalyticsEnabled()) {
             await connectDatabase_EHRInsights();
@@ -55,6 +55,13 @@ export default class MainApplication {
             await connectDatabase_AwardsFacts();
         }
 
+        //Seed the service
+        //await Loader.seeder.init();
+
+        if (process.env.NODE_ENV !== 'test') {
+            //Set-up cron jobs
+            await Loader.scheduler.schedule();
+        }
         // RabbitMQ connection
         await initializeBackgroundRabbitMQ()
 

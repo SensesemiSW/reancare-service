@@ -18,6 +18,7 @@ import { ConfigurationManager } from '../../../../config/configuration.manager';
 import { Injector } from '../../../../startup/injector';
 import { ApiError } from '../../../../common/api.error';
 import { UserService } from '../../../../services/users/user/user.service';
+import { produceMessagesForReportUpdateToQueue } from '../../../../../src/rabbitmq/rabbitmq.communication.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -148,7 +149,13 @@ export class StatisticsController {
         Logger.instance().log(`Report URL for Patient ${reportModel.PatientUserId} : ${url}`);
         if (url) {
             const message = `Hi ${userFirstName}, This message is from ${systemIdentifier} App. Your health report has been generated successfully, please check in the medical records.`;
-            sendStatus = await Loader.messagingService.sendSMS(phoneNumber, message);
+            
+            const publishMessage = {
+                phoneNumber : phoneNumber, 
+                message : message
+            }
+            sendStatus = await produceMessagesForReportUpdateToQueue(publishMessage)
+            //sendStatus = await Loader.messagingService.sendSMS(phoneNumber, message);
         } else {
             const message = `Hi ${userFirstName}, This message is from ${systemIdentifier} App. There was some issue while generating your health report, please try again!`;
             sendStatus = await Loader.messagingService.sendSMS(phoneNumber, message);

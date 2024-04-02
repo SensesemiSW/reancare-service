@@ -6,7 +6,7 @@ import { MessagingService } from '../modules/communication/messaging.service/mes
 import { NotificationService } from '../modules/communication/notification.service/notification.service';
 import { StorageService } from '../../src.bg.worker/src.bg/modules/ehr/services/storage.service';
 import { Injector } from './injector';
-import { Scheduler } from './scheduler';
+import { Scheduler } from '../../src.bg.worker/src.bg/startup/scheduler';
 import { Seeder } from './seeder';
 import { ConfigurationManager } from '../config/configuration.manager';
 

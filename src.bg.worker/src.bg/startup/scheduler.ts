@@ -1,17 +1,17 @@
 import * as cron from 'node-cron';
 import * as CronSchedules from '../../seed.data/cron.schedules.json';
-import { Logger } from '../common/logger';
-import { MedicationConsumptionService } from '../services/clinical/medication/medication.consumption.service';
-import { FileResourceService } from '../services/general/file.resource.service';
-import { Injector } from './injector';
-import { CareplanService } from '../services/clinical/careplan.service';
-import { CustomActionsHandler } from '../custom/custom.actions.handler';
-import { CommunityNetworkService } from '../modules/community.bw/community.network.service';
-import { ReminderSenderService } from '../services/general/reminder.sender.service';
-import { TerraSupportService } from '../api/devices/device.integrations/terra/terra.support.controller';
-import { UserService } from '../services/users/user/user.service';
-import { RunOnceScheduler } from '../modules/run.once.scripts/run.once.scheduler';
-import { DailyStatisticsService } from '../services/statistics/daily.statistics.service';
+import { Logger } from '../../../src/common/logger';
+import { MedicationConsumptionService } from '../../../src/services/clinical/medication/medication.consumption.service';
+import { FileResourceService } from '../../../src/services/general/file.resource.service';
+import { Injector } from '../../../src/startup/injector';
+import { CareplanService } from '../../../src/services/clinical/careplan.service';
+import { CustomActionsHandler } from '../../../src/custom/custom.actions.handler';
+import { CommunityNetworkService } from '../../../src/modules/community.bw/community.network.service';
+import { ReminderSenderService } from '../../../src/services/general/reminder.sender.service';
+import { TerraSupportService } from '../../../src/api/devices/device.integrations/terra/terra.support.controller';
+import { UserService } from '../../../src/services/users/user/user.service';
+import { RunOnceScheduler } from '../../../src/modules/run.once.scripts/run.once.scheduler';
+import { DailyStatisticsService } from '../../../src/services/statistics/daily.statistics.service';
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -42,22 +42,21 @@ export class Scheduler {
             try {
 
                 this.scheduleFileCleanup();
-                this.scheduleMedicationReminders();
-                this.scheduleCreateMedicationTasks();
-                this.scheduleMonthlyCustomTasks();
-                this.scheduleDailyCareplanPushTasks();
-                this.scheduleDailyHighRiskCareplan();
+                // this.scheduleMedicationReminders();
+                // this.scheduleCreateMedicationTasks();
+                // this.scheduleMonthlyCustomTasks();
+                // this.scheduleDailyCareplanPushTasks();
+                // this.scheduleDailyHighRiskCareplan();
                 this.scheduleHsSurvey();
-                this.scheduleReminderOnNoActionToDonationRequest();
-                this.scheduleReminders();
-                this.scheduleCareplanRegistrationReminders();
-                this.scheduleFetchDataFromDevices();
-                this.scheduleCurrentTimezoneUpdate();
-                this.scheduleDailyStatistics();
-                this.scheduleStrokeSurvey();
+                // this.scheduleReminderOnNoActionToDonationRequest();
+                // this.scheduleReminders();
+                // this.scheduleCareplanRegistrationReminders();
+                // this.scheduleCurrentTimezoneUpdate();
+                // this.scheduleDailyStatistics();
+                // this.scheduleStrokeSurvey();
 
                 //this.scheduleDaillyPatientTasks();
-                this.scheduleCareplanRegistrationRemindersForOldUsers();
+                //this.scheduleCareplanRegistrationRemindersForOldUsers();
 
                 const runOnceScheduler = RunOnceScheduler.instance();
                 runOnceScheduler.schedule(Scheduler._schedules);

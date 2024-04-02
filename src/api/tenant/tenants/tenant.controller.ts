@@ -17,10 +17,11 @@ import { EmailDetails } from "../../../modules/communication/email/email.details
 import { TenantDto } from '../../../domain.types/tenant/tenant.dto';
 import { Helper } from '../../../common/helper';
 import { TenantSettingsService } from '../../../services/tenant/tenant.settings.service';
+import { produceSendCreateTenantReqToQueue } from '../../../../src/rabbitmq/rabbitmq.communication.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-export class TenantController{
+export class TenantController {
 
     //#region member variables and constructors
 
@@ -56,16 +57,16 @@ export class TenantController{
             const adminPassword = Helper.generatePassword();
             const role = await this._roleService.getByName(Roles.TenantAdmin);
             const userModel: UserDomainModel = {
-                Person : {
-                    Phone     : tenant.Phone,
-                    Email     : tenant.Email,
-                    FirstName : 'Admin',
-                    LastName  : tenant.Name,
+                Person: {
+                    Phone: tenant.Phone,
+                    Email: tenant.Email,
+                    FirstName: 'Admin',
+                    LastName: tenant.Name,
                 },
-                TenantId : tenant.id,
-                UserName : adminUserName,
-                Password : adminPassword,
-                RoleId   : role.id,
+                TenantId: tenant.id,
+                UserName: adminUserName,
+                Password: adminPassword,
+                RoleId: role.id,
             };
 
             const person = await this._personService.create(userModel.Person);
@@ -86,8 +87,8 @@ export class TenantController{
             await this.sendWelcomeEmail(tenant, adminUserName, adminPassword);
 
             ResponseHandler.success(request, response, 'Tenant added successfully!', 201, {
-                Tenant   : tenant,
-                Settings : settings,
+                Tenant: tenant,
+                Settings: settings,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -102,7 +103,7 @@ export class TenantController{
                 throw new ApiError(404, 'Tenant not found.');
             }
             ResponseHandler.success(request, response, 'Tenant retrieved successfully!', 200, {
-                Tenant : tenant,
+                Tenant: tenant,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -117,7 +118,7 @@ export class TenantController{
             const message =
                 count === 0 ? 'No records found!' : `Total ${count} tenant records retrieved successfully!`;
             ResponseHandler.success(request, response, message, 200, {
-                TenantRecords : searchResults,
+                TenantRecords: searchResults,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -140,7 +141,7 @@ export class TenantController{
                 throw new ApiError(400, 'Unable to update tenant record!');
             }
             ResponseHandler.success(request, response, 'Tenant updated successfully!', 200, {
-                Tenant : updatedTenant,
+                Tenant: updatedTenant,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -159,7 +160,7 @@ export class TenantController{
             }
             const deleted = await this._service.delete(id);
             ResponseHandler.success(request, response, 'Tenant deleted successfully!', 200, {
-                Deleted : deleted,
+                Deleted: deleted,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -180,7 +181,7 @@ export class TenantController{
             }
             const promoted = await this._service.promoteTenantUserAsAdmin(id, userId);
             ResponseHandler.success(request, response, 'User promoted as admin to tenant successfully!', 200, {
-                Promoted : promoted,
+                Promoted: promoted,
             });
         }
         catch (error) {
@@ -202,7 +203,7 @@ export class TenantController{
             }
             const demoted = await this._service.demoteAdmin(id, userId);
             ResponseHandler.success(request, response, 'User demoted as admin from tenant successfully!', 200, {
-                Demoted : demoted,
+                Demoted: demoted,
             });
         }
         catch (error) {
@@ -219,7 +220,7 @@ export class TenantController{
             }
             const stats = await this._service.getTenantStats(id);
             ResponseHandler.success(request, response, 'Tenant stats retrieved successfully!', 200, {
-                Stats : stats,
+                Stats: stats,
             });
         }
         catch (error) {
@@ -236,7 +237,7 @@ export class TenantController{
             }
             const admins = await this._service.getTenantAdmins(id);
             ResponseHandler.success(request, response, 'Tenant admins retrieved successfully!', 200, {
-                Admins : admins,
+                Admins: admins,
             });
         }
         catch (error) {
@@ -253,7 +254,7 @@ export class TenantController{
             }
             const moderators = await this._service.getTenantRegularUsers(id);
             ResponseHandler.success(request, response, 'Tenant moderators retrieved successfully!', 200, {
-                Moderators : moderators,
+                Moderators: moderators,
             });
         }
         catch (error) {
@@ -271,9 +272,9 @@ export class TenantController{
             body.replace('{{TENANT_ADMIN_USER_NAME}}', adminUserName);
             body.replace('{{TENANT_ADMIN_PASSWORD}}', adminPassword);
             const emailDetails: EmailDetails = {
-                EmailTo : tenant.Email,
-                Subject : `Welcome`,
-                Body    : body,
+                EmailTo: tenant.Email,
+                Subject: `Welcome`,
+                Body: body,
             };
             Logger.instance().log(`Username -> ${adminUserName}`);
             Logger.instance().log(`Password -> ${adminPassword}`);
@@ -281,6 +282,12 @@ export class TenantController{
             Logger.instance().log(`Email details: ${JSON.stringify(emailDetails)}`);
 
             const sent = await emailService.sendEmail(emailDetails, false);
+            // const data = {
+            //     emailDetails: emailDetails,
+            //     textBody : false
+            // }
+            // console.log(data)
+            // const sent = await produceSendCreateTenantReqToQueue(data)
             if (!sent) {
                 Logger.instance().log(`Unable to send email to ${tenant.Email}`);
             }

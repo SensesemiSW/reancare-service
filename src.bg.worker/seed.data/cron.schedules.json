@@ -1,13 +1,13 @@
 {
     "local": {
-        "FileCleanup": "* * * * *",
+        "FileCleanup": "*/55 * * * *",
         "MedicationReminder": "*/15 * * * *",
         "CreateMedicationTasks": "5 0 * * *",
         "PatientDailyTasks": "*/7 * * * *",
         "ScheduleDailyHighRiskCareplan": "0 3 * * *",
         "ScheduleCustomTasks": "0 9 * * *",
         "ScheduleDailyCareplanPushTasks": "*/15 * * * *",
-        "ScheduleHsSurvey": "* * * * *",
+        "ScheduleHsSurvey": "0 11 * * *",
         "ReminderOnNoActionToDonationRequest": "30 12 * * *",
         "Reminders": "*/10 * * * *",
         "CareplanRegistrationReminder": "0 13 * * *",

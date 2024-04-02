@@ -1,6 +1,7 @@
 import * as amqp from 'amqplib';
 import { rabbitmqConfig } from '../../../src/rabbitmq/config';
 import { initializebgrabbitconsumer } from './rabbitmq.consumer';
+import { Logger } from '../../../src/common/logger';
 // import { initializebgrabbitconsumer } from './rabbitmq.consumer';
 let connection: amqp.Connection;
 

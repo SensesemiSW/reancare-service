@@ -20,6 +20,7 @@ import { PersonService } from '../../services/person/person.service';
 import { UserService } from '../../services/users/user/user.service';
 import { TimeHelper } from '../../common/time.helper';
 import { Injector } from '../../startup/injector';
+import { produceSechudleHsSurveyToQueue } from '../../../src/rabbitmq/rabbitmq.communication.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -307,7 +308,12 @@ export class AHAActions {
                                 userFirstName = person.FirstName;
                             }
                             const message = `Dear ${userFirstName}, Tell us what you thought about the Heart & Stroke Helper app! You will receive a $10 Amazon gift card as a token of appreciation for completing the full survey. Follow the link to share your thoughts: https://tinyurl.com/HSHCholesterol`;
-                            const sendStatus = await Loader.messagingService.sendSMS(phoneNumber, message);
+                            //const sendStatus = await Loader.messagingService.sendSMS(phoneNumber, message);
+                            const comm_message = {
+                                PhoneNumber: phoneNumber,
+                                Message: message
+                            }
+                            const sendStatus = await produceSechudleHsSurveyToQueue(comm_message)
                             if (sendStatus) {
                                 Logger.instance().log(`Message sent successfully`);
                                 await this.createHsPatientSurveyTask(patient);

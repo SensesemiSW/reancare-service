@@ -54,12 +54,12 @@ export default class Application {
             //Connect databases
             await connectDatabase_Primary();
 
-            if (ConfigurationManager.EHRAnalyticsEnabled()) {
-                await connectDatabase_EHRInsights();
-            }
-            if (ConfigurationManager.GamificationEnabled()) {
-                await connectDatabase_AwardsFacts();
-            }
+            // if (ConfigurationManager.EHRAnalyticsEnabled()) {
+            //     await connectDatabase_EHRInsights();
+            // }
+            // if (ConfigurationManager.GamificationEnabled()) {
+            //     await connectDatabase_AwardsFacts();
+            // }
 
             //Set-up middlewares
             await this.setupMiddlewares();
@@ -73,10 +73,10 @@ export default class Application {
             // RabbitMQ connection
             await initializeRabbitMQ()
 
-            if (process.env.NODE_ENV !== 'test') {
-                //Set-up cron jobs
-                await Loader.scheduler.schedule();
-            }
+            // if (process.env.NODE_ENV !== 'test') {
+            //     //Set-up cron jobs
+            //     await Loader.scheduler.schedule();
+            // }
 
             this._app.use(errorHandlerMiddleware);
 
