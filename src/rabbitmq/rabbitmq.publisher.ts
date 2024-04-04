@@ -209,7 +209,7 @@ async function publishEHREventToQueue(queueName: string, message: any): Promise<
         console.log(`EHR Message published to RabbitMQ queue: ${queueName}`);
 
         // Close the channel
-        await channel.close();
+        //await channel.close();
     } catch (error) {
         console.error(`Error publishing EHR message to RabbitMQ queue ${queueName}:`, error);
         throw error;
@@ -232,6 +232,7 @@ export async function publishDeleteBloodGlucoseEHRToQueue(message: any): Promise
 // Blood Saturation EHR messages
 export async function publishAddBloodSaturationEHRToQueue(message: any): Promise<void> {
     await publishEHREventToQueue('add_blood_saturation_ehr_queue', message);
+    console.log('ehr to add blood saturation worked')
 }
 
 export async function publishUpdateBloodSaturationEHRToQueue(message: any): Promise<void> {

@@ -15,6 +15,8 @@ import { Logger } from '../../src/common/logger';
 import { PrimaryDatabaseConnector } from '../../src/database/database.connector';
 import { DatabaseClient } from '../../src/common/database.utils/dialect.clients/database.client';
 import { DatabaseSchemaType } from '../../src/common/database.utils/database.config';
+import { BGInjector } from './startup/injector';
+
 
 ///////////////////////////////////////////////////////////////////////// 
 
@@ -45,7 +47,7 @@ export default class MainApplication {
         await Loader.init();
 
         //Connect databases
-        //await connectDatabase_Primary();
+        await connectDatabase_Primary();
 
         if (ConfigurationManager.EHRAnalyticsEnabled()) {
             await connectDatabase_EHRInsights();
@@ -54,6 +56,9 @@ export default class MainApplication {
         if (ConfigurationManager.GamificationEnabled()) {
             await connectDatabase_AwardsFacts();
         }
+
+        //Register injections here...
+        BGInjector.registerInjections();
 
         //Seed the service
         //await Loader.seeder.init();

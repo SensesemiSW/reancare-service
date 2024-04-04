@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { getBackgroundRabbitMQConnection } from '../../src.bg/rabbitmq/rabbitmq.connection';
 import { AwardsFactsService } from '../../src.bg/modules/awards.facts/awards.facts.service'
 import { EHRAnalyticsHandler } from '../modules/ehr.analytics/ehr.analytics.handler';
@@ -21,6 +22,7 @@ import { EHRNutritionService } from '../modules/ehr.analytics/ehr.services/ehr.n
 import { EHRPatientService } from '../modules/ehr.analytics/ehr.services/ehr.patient.service';
 import { EHRPhysicalActivityService } from '../modules/ehr.analytics/ehr.services/ehr.physical.activity.service';
 import { EHRUserTaskService } from '../modules/ehr.analytics/ehr.services/ehr.user.task.service';
+import { container } from 'tsyringe';
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,39 +51,6 @@ async function consumeAwardFromQueue(queueName: string, processFunction: Functio
 
                     // Process the message using the provided function
                     await processFunction(messageContent);
-
-                    // Acknowledge the message to remove it from the queue
-                    channel.ack(message);
-                } catch (error) {
-                    console.error('Error processing message from RabbitMQ:', error);
-                    // Reject and requeue the message
-                    channel.nack(message);
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Error consuming messages from RabbitMQ:', error);
-        throw error;
-    }
-}
-async function consumeEHRFromQueue(queueName: string, processMessage: (messageContent: any) => Promise<void>): Promise<void> {
-    try {
-        // Create a channel from the connection
-        const connection = getBackgroundRabbitMQConnection();
-        const channel = await connection.createChannel();
-
-        // Assert the queue to make sure it exists, otherwise create it
-        await channel.assertQueue(queueName, { durable: true });
-
-        // Set up the message consumer
-        channel.consume(queueName, async (message) => {
-            if (message !== null) {
-                try {
-                    // Parse the message
-                    const messageContent = JSON.parse(message.content.toString());
-
-                    // Process the message
-                    await processMessage(messageContent);
 
                     // Acknowledge the message to remove it from the queue
                     channel.ack(message);
@@ -188,155 +157,198 @@ export async function consumeUpdateFoodConsumptionFromQueue(): Promise<void> {
 
 //EHR Vital
 
-export async function consumeAddBloodGlucoseEHRFromQueue(): Promise<void> {
-    await consumeEHRFromQueue('add_blood_glucose_ehr_queue', async (messageContent) => {
-        const eHRVitalService = new EHRVitalService();
-        await eHRVitalService.addEHRBloodGlucoseForAppNames(messageContent);
-    });
+async function consumeEHRFromQueue(queueName: string, processMessage: Function): Promise<void> {
+    try {
+        // Create a channel from the connection
+        const connection = getBackgroundRabbitMQConnection();
+        const channel = await connection.createChannel();
+
+        // Assert the queue to make sure it exists, otherwise create it
+        await channel.assertQueue(queueName, { durable: true });
+
+        // Set up the message consumer
+        channel.consume(queueName, async (message) => {
+            if (message !== null) {
+                try {
+                    // Parse the message
+                    const messageContent = JSON.parse(message.content.toString());
+
+                    // Process the message
+                    await processMessage(messageContent);
+
+                    console.log("message receiced from" + queueName)
+
+                    // Acknowledge the message to remove it from the queue
+                    channel.ack(message);
+                } catch (error) {
+                    console.error('Error processing message from RabbitMQ:', error);
+                    // Reject and requeue the message
+                    channel.nack(message);
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error consuming messages from RabbitMQ:', error);
+        throw error;
+    }
 }
 
-export async function consumeUpdateBloodGlucoseEHRFromQueue(): Promise<void> {
-    await consumeEHRFromQueue('update_blood_glucose_ehr_queue', async (messageContent) => {
-        const eHRVitalService = new EHRVitalService();
-        await eHRVitalService.addEHRBloodGlucoseForAppNames(messageContent);
-    });
-}
-
-export async function consumeDeleteBloodGlucoseEHRFromQueue(): Promise<void> {
-    await consumeEHRFromQueue('delete_blood_glucose_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.deleteRecord(messageContent);
-    });
-}
-
+// Blood Saturation EHR messages
 export async function consumeAddOxygenSaturationEHRFromQueue(): Promise<void> {
-    await consumeEHRFromQueue('add_oxygen_saturation_ehr_queue', async (messageContent) => {
-        const eHRVitalService = new EHRVitalService();
+    const eHRVitalService = container.resolve(EHRVitalService);
+    await consumeEHRFromQueue('add_blood_saturation_ehr_queue', async (messageContent) => {
         await eHRVitalService.addEHRBloodOxygenSaturationForAppNames(messageContent);
     });
 }
 
 export async function consumeUpdateOxygenSaturationEHRFromQueue(): Promise<void> {
-    await consumeEHRFromQueue('update_oxygen_saturation_ehr_queue', async (messageContent) => {
-        const eHRVitalService = new EHRVitalService();
+    await consumeEHRFromQueue('update_blood_saturation_ehr_queue', async (messageContent) => {
+        const eHRVitalService = container.resolve(EHRVitalService);
         await eHRVitalService.addEHRBloodOxygenSaturationForAppNames(messageContent);
     });
 }
 
 export async function consumeDeleteBloodOxygenSaturationEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('delete_blood_oxygen_saturation_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.deleteRecord(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.deleteRecord(messageContent);
     });
 }
 
+// Blood Glucose EHR messages
+export async function consumeAddBloodGlucoseEHRFromQueue(): Promise<void> {
+    await consumeEHRFromQueue('add_blood_glucose_ehr_queue', async (messageContent) => {
+        const eHRVitalService = container.resolve(EHRVitalService);
+        await eHRVitalService.addEHRBloodGlucoseForAppNames(messageContent);
+    });
+}
+
+export async function consumeUpdateBloodGlucoseEHRFromQueue(): Promise<void> {
+    await consumeEHRFromQueue('update_blood_glucose_ehr_queue', async (messageContent) => {
+        const eHRVitalService = container.resolve(EHRVitalService);
+        await eHRVitalService.addEHRBloodGlucoseForAppNames(messageContent);
+    });
+}
+
+export async function consumeDeleteBloodGlucoseEHRFromQueue(): Promise<void> {
+    await consumeEHRFromQueue('delete_blood_glucose_ehr_queue', async (messageContent) => {
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.deleteRecord(messageContent);
+    });
+}
+
+// Blood Pressure EHR messages
 export async function consumeAddBloodPressureEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('add_blood_pressure_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRBloodPressureForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRBloodPressureForAppNames(messageContent);
     });
 }
 
 export async function consumeUpdateBloodPressureEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('update_blood_pressure_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRBloodPressureForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRBloodPressureForAppNames(messageContent);
     });
 }
 
 
 export async function consumeDeleteBloodPressureEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('delete_blood_pressure_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.deleteRecord(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.deleteRecord(messageContent);
     });
 }
 
+// Body Height EHR messages
 export async function consumeAddBodyHeightEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('add_body_height_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRBodyHeightForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRBodyHeightForAppNames(messageContent);
     });
 }
 
 export async function consumeUpdateBodyHeightEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('update_body_height_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRBodyHeightForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRBodyHeightForAppNames(messageContent);
     });
 }
 
 export async function consumeDeleteBodyHeightEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('delete_body_height_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.deleteRecord(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.deleteRecord(messageContent);
     });
 }
 
+// Body Weight EHR messages
 export async function consumeAddBodyWeightEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('add_body_weight_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRBodyWeightForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRBodyWeightForAppNames(messageContent);
     });
 }
 
 export async function consumeUpdateBodyWeighttEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('update_body_weight_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRBodyWeightForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRBodyWeightForAppNames(messageContent);
     });
 }
 
 export async function consumeDeleteBodyWeightEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('delete_body_weight_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.deleteRecord(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.deleteRecord(messageContent);
     });
 }
 
+// Body Temperature EHR messages
 export async function consumeAddBodyTempEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('add_body_temperature_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRBodyTemperatureForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRBodyTemperatureForAppNames(messageContent);
     });
 }
 
 export async function consumeUpdateBodyTempEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('update_body_temperature_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRBodyTemperatureForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRBodyTemperatureForAppNames(messageContent);
     });
 }
 
 export async function consumeDeleteBodyTemperatureEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('delete_body_height_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.deleteRecord(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.deleteRecord(messageContent);
     });
 }
 
-
+// Pulse Control EHR messages
 export async function consumeAddPulseEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('add_pulse_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRPulseForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRPulseForAppNames(messageContent);
     });
 }
 
 export async function consumeUpdatePulsetEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('update_pulse_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.addEHRPulseForAppNames(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.addEHRPulseForAppNames(messageContent);
     });
 }
 
 export async function consumeDeletePulseControleEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('delete_pulse_controle_ehr_queue', async (messageContent) => {
-        const ehrVitalService = new EHRVitalService();
-        ehrVitalService.deleteRecord(messageContent);
+        const eHRVitalService = container.resolve(EHRVitalService);
+        eHRVitalService.deleteRecord(messageContent);
     });
 }
 
+// Lab Record EHR messages
 export async function consumeAddLabRecordEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('add_lab_record_ehr_queue', async (messageContent) => {
         const ehrLabService = new EHRLabService();
@@ -358,6 +370,7 @@ export async function consumeDeleteLabRecordEHRFromQueue(): Promise<void> {
     });
 }
 
+// Medication EHR messages
 export async function consumeAddMedicationEHRFromQueue(): Promise<void> {
     await consumeEHRFromQueue('add_medication_ehr_queue', async (messageContent) => {
         const ehrMedicationService = new EHRMedicationService();

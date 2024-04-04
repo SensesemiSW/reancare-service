@@ -42,21 +42,21 @@ export class Scheduler {
             try {
 
                 this.scheduleFileCleanup();
-                // this.scheduleMedicationReminders();
-                // this.scheduleCreateMedicationTasks();
-                // this.scheduleMonthlyCustomTasks();
-                // this.scheduleDailyCareplanPushTasks();
-                // this.scheduleDailyHighRiskCareplan();
+                this.scheduleMedicationReminders();
+                this.scheduleCreateMedicationTasks();
+                this.scheduleMonthlyCustomTasks();
+                this.scheduleDailyCareplanPushTasks();
+                this.scheduleDailyHighRiskCareplan();
                 this.scheduleHsSurvey();
-                // this.scheduleReminderOnNoActionToDonationRequest();
-                // this.scheduleReminders();
-                // this.scheduleCareplanRegistrationReminders();
-                // this.scheduleCurrentTimezoneUpdate();
-                // this.scheduleDailyStatistics();
-                // this.scheduleStrokeSurvey();
+                this.scheduleReminderOnNoActionToDonationRequest();
+                this.scheduleReminders();
+                this.scheduleCareplanRegistrationReminders();
+                this.scheduleCurrentTimezoneUpdate();
+                this.scheduleDailyStatistics();
+                this.scheduleStrokeSurvey();
 
                 //this.scheduleDaillyPatientTasks();
-                //this.scheduleCareplanRegistrationRemindersForOldUsers();
+                this.scheduleCareplanRegistrationRemindersForOldUsers();
 
                 const runOnceScheduler = RunOnceScheduler.instance();
                 runOnceScheduler.schedule(Scheduler._schedules);
