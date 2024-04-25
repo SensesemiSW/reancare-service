@@ -18,7 +18,7 @@ import { ConfigurationManager } from '../../../../config/configuration.manager';
 import { Injector } from '../../../../startup/injector';
 import { ApiError } from '../../../../common/api.error';
 import { UserService } from '../../../../services/users/user/user.service';
-import { produceMessagesForReportUpdateToQueue } from '../../../../../src/rabbitmq/rabbitmq.communication.publisher';
+import { produceMessagesForReportUpdateToQueue } from '../../../../rabbitmq/rabbitmq.comm.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 

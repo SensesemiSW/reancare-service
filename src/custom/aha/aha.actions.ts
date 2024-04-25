@@ -20,7 +20,7 @@ import { PersonService } from '../../services/person/person.service';
 import { UserService } from '../../services/users/user/user.service';
 import { TimeHelper } from '../../common/time.helper';
 import { Injector } from '../../startup/injector';
-import { produceSechudleHsSurveyToQueue } from '../../../src/rabbitmq/rabbitmq.communication.publisher';
+import { produceSechudleHsSurveyToQueue } from '../../rabbitmq/rabbitmq.comm.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 

@@ -1,6 +1,6 @@
-import { getRabbitMQConnection } from '../rabbitmq/rabbitmq.connection';
+import { getRabbitMQConnection } from './rabbitmq.connection';
 import { Channel } from "amqplib";
-import config from "./config";
+// import config from "./config";
 import { randomUUID } from "crypto";
 import EventEmitter from "events";
 

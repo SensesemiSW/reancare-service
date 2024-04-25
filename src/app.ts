@@ -18,6 +18,7 @@ import { Injector } from './startup/injector';
 import ClientAppAuthMiddleware from './middlewares/client.app.auth.middleware';
 import { errorHandlerMiddleware } from './middlewares/error.handling.middleware';
 import { initializeRabbitMQ } from './rabbitmq/rabbitmq.connection';
+import { initializeBackgroundRabbitMQ } from '../src.bg.worker/src.bg/rabbitmq/rabbitmq.connection';
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -72,6 +73,12 @@ export default class Application {
 
             // RabbitMQ connection
             await initializeRabbitMQ()
+
+
+            if (process.env.NODE_ENV === 'test') {
+                await initializeBackgroundRabbitMQ();
+            }
+
 
             // if (process.env.NODE_ENV !== 'test') {
             //     //Set-up cron jobs

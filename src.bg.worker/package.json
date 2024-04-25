@@ -15,6 +15,7 @@
     "tsyringe": "^4.8.0"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.5",
     "typescript": "^5.4.2"
   },
   "description": ""

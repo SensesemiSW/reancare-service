@@ -8,6 +8,7 @@ let connection: amqp.Connection;
 // Function to initialize RabbitMQ connection
 export async function initializeBackgroundRabbitMQ() {
     try {
+        await new Promise(resolve => setTimeout(resolve, 500));
         connection = await amqp.connect(rabbitmqConfig);
         console.log('Connected to BG RabbitMQ');
         await initializebgrabbitconsumer()

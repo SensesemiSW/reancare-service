@@ -32,6 +32,7 @@
     "include": [
         "src/**/*",
         "tests/api-tests/tests/*",
+        "tests/async-api-tests/*",
         "src.bg.worker/**/*"
     ],
     "exclude": [

@@ -17,7 +17,7 @@ import { EmailDetails } from "../../../modules/communication/email/email.details
 import { TenantDto } from '../../../domain.types/tenant/tenant.dto';
 import { Helper } from '../../../common/helper';
 import { TenantSettingsService } from '../../../services/tenant/tenant.settings.service';
-import { produceSendCreateTenantReqToQueue } from '../../../../src/rabbitmq/rabbitmq.communication.publisher';
+import { produceSendCreateTenantReqToQueue } from '../../../rabbitmq/rabbitmq.comm.publisher';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
