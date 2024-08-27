@@ -281,4 +281,34 @@ export class BloodOxygenSaturationRepo implements IBloodOxygenSaturationRepo {
         }
     };
 
+    StoreSpo2Data = async (spo2Data): Promise<any> => {
+        try {
+            for (const record of spo2Data) {
+                const existingRecord = await BloodOxygenSaturationModel.findOne({
+                    where : { RefId: record.id }
+                });
+                if (!existingRecord) {
+                    await BloodOxygenSaturationModel.create({
+                        RefId                 : record.id,
+                        EhrId                 : null,
+                        PersonId              : null,
+                        PatientUserId         : record.PatientId,
+                        TerraSummaryId        : null,
+                        Providerm             : null,
+                        BloodOxygenSaturation : null,
+                        Unit                  : 'mm-Hg',
+                        RecordDate            : new Date(`${record.Date}T${record.Time}`),
+                        RecordedByUserId      : null,
+                        DeviceName            : "SenseH",
+                        CalculatedData        : record.CalculatedData,
+                    });
+                }
+            }
+            Logger.instance().log('Blood Saturation Oxygen data stored successfully.');
+        } catch (error) {
+            Logger.instance().log('Error storing blood saturation oxygen  data: ' + error.message);
+            throw new ApiError(500, 'Error storing blood saturation oxygen data: ' + error.message);
+        }
+    };
+
 }

@@ -7,6 +7,7 @@ import { BloodOxygenSaturationSearchFilters, BloodOxygenSaturationSearchResults 
 import { BloodOxygenSaturationStore } from "../../../modules/ehr/services/blood.oxygen.saturation.store";
 import { ConfigurationManager } from "../../../config/configuration.manager";
 import { Injector } from "../../../startup/injector";
+import { SenseDeviceVitalsService } from "../../../modules/devices/providers/senseH/ayta.device.vitals.service";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -64,6 +65,14 @@ export class BloodOxygenSaturationService {
     getAllUserResponsesBefore = async (patientUserId: string, date: Date)
         : Promise<any[]> => {
         return await this._bloodOxygenSaturationRepo.getAllUserResponsesBefore(patientUserId, date);
+    };
+
+    fetchAndStoreSpO2Data = async () => {
+        const senseDeviceVitalsService = new SenseDeviceVitalsService();
+        const spo2Data = await senseDeviceVitalsService.searchSpo2(`${process.env.SENSE_PATIENT_ID}`);
+        if (spo2Data) {
+            await this._bloodOxygenSaturationRepo.StoreSpo2Data(spo2Data);
+        }
     };
 
 }

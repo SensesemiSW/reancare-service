@@ -76,7 +76,7 @@ export default class BloodOxygenSaturation extends Model {
     @IsDecimal
     @Column({
         type      : DataType.FLOAT,
-        allowNull : false,
+        allowNull : true,
         validate  : {
             min : 1,
             max : 100
@@ -116,5 +116,19 @@ export default class BloodOxygenSaturation extends Model {
 
     @DeletedAt
     DeletedAt: Date;
+
+    // Additional Fields
+    @Length({ min: 2, max: 128 })
+    @Column({
+        type      : DataType.STRING(128),
+        allowNull : true,
+    })
+    RefId: string;
+
+    @Column(DataType.STRING)
+      DeviceName: string;
+    
+    @Column(DataType.JSON)
+    CalculatedData: JSON;
 
 }

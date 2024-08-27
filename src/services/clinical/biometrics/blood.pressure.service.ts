@@ -13,6 +13,7 @@ import { IUserDeviceDetailsRepo } from "../../../database/repository.interfaces/
 import { IUserRepo } from "../../../database/repository.interfaces/users/user/user.repo.interface";
 import { IPersonRepo } from "../../../database/repository.interfaces/person/person.repo.interface";
 import { Injector } from "../../../startup/injector";
+import { SenseDeviceVitalsService } from "../../../modules/devices/providers/senseH/ayta.device.vitals.service";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -98,6 +99,14 @@ export class BloodPressureService {
     getAllUserResponsesBefore = async (patientUserId: string, date: Date)
         : Promise<any[]> => {
         return await this._bloodPressureRepo.getAllUserResponsesBefore(patientUserId, date);
+    };
+
+    fetchAndStoreBpData = async () => {
+        const senseDeviceVitalsService = new SenseDeviceVitalsService();
+        const bpData = await senseDeviceVitalsService.searchBp(`${process.env.SENSE_PATIENT_ID}`);
+        if (bpData) {
+            await this._bloodPressureRepo.storeBpData(bpData);
+        }
     };
 
 }
