@@ -22,4 +22,5 @@ export interface DocumentDto {
     SizeInKBytes?             : number;
     RecordDate?               : Date;
     UploadedDate?             : Date;
+    ReferenceId?              : string
 }

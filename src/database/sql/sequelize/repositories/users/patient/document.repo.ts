@@ -34,7 +34,8 @@ export class DocumentRepo implements IDocumentRepo {
                 MimeType                  : model.FileMetaData.MimeType,
                 SizeInKBytes              : model.FileMetaData.Size,
                 RecordDate                : model.RecordDate,
-                UploadedDate              : model.UploadedDate
+                UploadedDate              : model.UploadedDate,
+                ReferenceId               : model.id
             };
 
             const document = await Document.create(entity);
@@ -240,6 +241,21 @@ export class DocumentRepo implements IDocumentRepo {
 
             return searchResults;
 
+        } catch (error) {
+            Logger.instance().log(error.message);
+            throw new ApiError(500, error.message);
+        }
+    };
+
+    getDocumentByReferenceId = async (referenceId: string): Promise<DocumentDto | null> => {
+        try {
+            const document = await Document.findOne({ where: { ReferenceId: referenceId } });
+
+            if (!document) {
+                return null;
+            }
+
+            return DocumentMapper.toDto(document);
         } catch (error) {
             Logger.instance().log(error.message);
             throw new ApiError(500, error.message);

@@ -33,6 +33,13 @@ export default class Document extends Model {
     })
     id: string;
 
+    @Length({ min: 2, max: 128 })
+    @Column({
+        type      : DataType.STRING(128),
+        allowNull : true,
+    })
+    ReferenceId: string;
+
     @Length({ max: 128 })
     @Column({
         type      : DataType.STRING(128),

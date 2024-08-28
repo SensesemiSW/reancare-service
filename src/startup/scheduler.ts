@@ -63,10 +63,10 @@ export class Scheduler {
                 this.scheduleCurrentTimezoneUpdate();
                 this.scheduleDailyStatistics();
                 this.scheduleStrokeSurvey();
-                this.scheduleFetchAdminDataFromSenseDevices()
+                this.scheduleFetchAdminDataFromSenseDevices();
                 this.scheduleFetchReportDataFromSenseDevices();
                 this.scheduleFetchDataFromSenseDevices();
-                this.scheduleFetchlientAdminDataFromSenseDevices()
+                this.scheduleFetchlientAdminDataFromSenseDevices();
                 
                 //this.scheduleDaillyPatientTasks();
                 this.scheduleCareplanRegistrationRemindersForOldUsers();

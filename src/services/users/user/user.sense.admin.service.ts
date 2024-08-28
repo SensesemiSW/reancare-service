@@ -13,7 +13,7 @@ export class SenseDeviceAdminService {
 
     fetchAndStoreSenseDeviceAdminData = async () => {
         const senseDeviceVitalsUsageService = new SenseDeviceVitalsUsageService();
-        const senseUsageData = await senseDeviceVitalsUsageService.searchAllUsage("year");
+        const senseUsageData = await senseDeviceVitalsUsageService.searchAllUsage("month");
         if (senseUsageData) {
             await this._senseDeviceAdminRepo.create(senseUsageData);
         }
@@ -21,7 +21,7 @@ export class SenseDeviceAdminService {
 
     fetchAndStoreSenseDeviceClientAdminData = async (clientId: string) => {
         const senseDeviceVitalsUsageService = new SenseDeviceVitalsUsageService();
-        const senseUsageData = await senseDeviceVitalsUsageService.searchUsageByClient(clientId, "year");
+        const senseUsageData = await senseDeviceVitalsUsageService.searchUsageByClient(clientId, "month");
         if (senseUsageData) {
             await this._senseDeviceAdminRepo.create(senseUsageData);
         }
