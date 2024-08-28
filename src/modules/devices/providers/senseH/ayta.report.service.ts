@@ -76,93 +76,94 @@ export class ReportService {
         }
     }
 
-    public async processReport(patientId: string, apiKey: string): Promise<void> {
+    public async processReport(patientIds: string[], apiKey: string): Promise<void> {
         try {
-            const reports = await this.fetchReports(patientId, apiKey);
+            for (const patientId of patientIds) {
+                const reports = await this.fetchReports(patientId, apiKey);
 
-            if (reports.length === 0) {
-                Logger.instance().log('No reports found for the given patientId');
-                return;
-            }
-
-            for (const report of reports) {
-
-                const KeyName = report.ReportKeyName;
-                const parts = KeyName.split('/');
-                const originalName = parts.pop();
-                const referenceId = report.id;
-
-                const existingDocument = await this._documentservice.getDocumentByReferenceId(referenceId);
-
-                if (existingDocument) {
+                if (reports.length === 0) {
+                    Logger.instance().log(`No reports found for patientId: ${patientId}`);
                     continue;
                 }
 
-                const sourceFilePath = path.join(process.cwd(), 'src', 'modules', 'devices', 'providers', 'senseH', 'downloads', `${originalName}`);
+                for (const report of reports) {
+                    const KeyName = report.ReportKeyName;
+                    const parts = KeyName.split('/');
+                    const originalName = parts.pop();
+                    const referenceId = report.id;
 
-                await this.downloadPDF(report);
+                    const existingDocument = await this._documentservice.getDocumentByReferenceId(referenceId);
 
-                const fileResourceMetadata: FileResourceMetadata = {
-                    ResourceId       : "12345",
-                    VersionId        : "v1.0",
-                    Version          : "1.0.0",
-                    FileName         : originalName,
-                    OriginalName     : originalName,
-                    SourceFilePath   : sourceFilePath,
-                    MimeType         : "application/pdf",
-                    Size             : 204800,
-                    StorageKey       : report.ReportKeyName,
-                    IsDefaultVersion : true,
-                    IsPublicResource : false,
-                    Disposition      : DownloadDisposition.Inline,
-                    Url              : report.ReportUrl,
-                    Stream           : null,
-                };
+                    if (existingDocument) {
+                        continue;
+                    }
 
-                const model: DocumentDomainModel = {
-                    id                        : report.id,
-                    EhrId                     : report.id,
-                    DisplayId                 : "DID123",
-                    DocumentType              : DocumentTypes.LabReport, // PatientId
-                    PatientUserId             : report.id, // PatientId
-                    MedicalPractitionerUserId : null,
-                    UploadedByUserId          : report.id, // PatientId
-                    AssociatedVisitId         : null,
-                    AssociatedOrderId         : null,
-                    MedicalPractionerRole     : null,
-                    AssociatedVisitType       : VisitType.LabVisit,
-                    AssociatedOrderType       : OrderTypes.Unknown,
-                    FileMetaData              : fileResourceMetadata,
-                    RecordDate                : new Date(),
-                    UploadedDate              : new Date(),
-                    ReferenceId               : report.id
-                };
+                    const sourceFilePath = path.join(process.cwd(), 'src', 'modules', 'devices', 'providers', 'senseH', 'downloads', `${originalName}`);
 
-                var fileResourceDomainModel: FileResourceUploadDomainModel = {
-                    FileMetadata           : model.FileMetaData,
-                    IsMultiResolutionImage : false,
-                    IsPublicResource       : false,
-                    OwnerUserId            : model.id,
-                    UploadedByUserId       : model.id
-                };
+                    await this.downloadPDF(report);
 
-                var fileResourceDto = await this._fileResourceService.upload(fileResourceDomainModel);
-                model.FileMetaData = fileResourceDto.DefaultVersion;
-    
-                const document = await this._documentservice.upload(model);
+                    const fileResourceMetadata: FileResourceMetadata = {
+                        ResourceId       : "12345",
+                        VersionId        : "v1.0",
+                        Version          : "1.0.0",
+                        FileName         : originalName,
+                        OriginalName     : originalName,
+                        SourceFilePath   : sourceFilePath,
+                        MimeType         : "application/pdf",
+                        Size             : 204800,
+                        StorageKey       : report.ReportKeyName,
+                        IsDefaultVersion : true,
+                        IsPublicResource : false,
+                        Disposition      : DownloadDisposition.Inline,
+                        Url              : report.ReportUrl,
+                        Stream           : null,
+                    };
 
-                if (document == null) {
-                    Logger.instance().log('Cannot upload document!');
+                    const model: DocumentDomainModel = {
+                        id                        : report.id,
+                        EhrId                     : report.id,
+                        DisplayId                 : "DID123",
+                        DocumentType              : DocumentTypes.LabReport,
+                        PatientUserId             : report.id,
+                        MedicalPractitionerUserId : null,
+                        UploadedByUserId          : report.id,
+                        AssociatedVisitId         : null,
+                        AssociatedOrderId         : null,
+                        MedicalPractionerRole     : null,
+                        AssociatedVisitType       : VisitType.LabVisit,
+                        AssociatedOrderType       : OrderTypes.Unknown,
+                        FileMetaData              : fileResourceMetadata,
+                        RecordDate                : new Date(),
+                        UploadedDate              : new Date(),
+                        ReferenceId               : report.id
+                    };
+
+                    const fileResourceDomainModel: FileResourceUploadDomainModel = {
+                        FileMetadata           : model.FileMetaData,
+                        IsMultiResolutionImage : false,
+                        IsPublicResource       : false,
+                        OwnerUserId            : model.id,
+                        UploadedByUserId       : model.id
+                    };
+
+                    const fileResourceDto = await this._fileResourceService.upload(fileResourceDomainModel);
+                    model.FileMetaData = fileResourceDto.DefaultVersion;
+
+                    const document = await this._documentservice.upload(model);
+
+                    if (document == null) {
+                        Logger.instance().log('Cannot upload document!');
+                    }
+                    
+                    Logger.instance().log(`Report uploaded successfully for patientId: ${patientId}`);
                 }
-                
-                Logger.instance().log(`Report uploaded successfully`);
             }
 
-            Logger.instance().log('Reports processed successfully');
+            Logger.instance().log('Reports processed successfully for all patients');
         } catch (error) {
             Logger.instance().log(`processReports: ${error}`);
         }
     }
-
+    
 }
 

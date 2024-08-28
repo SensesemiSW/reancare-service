@@ -8,6 +8,8 @@ import { BloodOxygenSaturationStore } from "../../../modules/ehr/services/blood.
 import { ConfigurationManager } from "../../../config/configuration.manager";
 import { Injector } from "../../../startup/injector";
 import { SenseDeviceVitalsService } from "../../../modules/devices/providers/senseH/ayta.device.vitals.service";
+import { IPatientRepo } from "../../../database/repository.interfaces/users/patient/patient.repo.interface";
+import { Logger } from "../../../common/logger";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -18,6 +20,8 @@ export class BloodOxygenSaturationService {
 
     constructor(
         @inject('IBloodOxygenSaturationRepo') private _bloodOxygenSaturationRepo: IBloodOxygenSaturationRepo,
+        @inject('IPatientRepo') private _patientRepo: IPatientRepo,
+
     ) {
         if (ConfigurationManager.EhrEnabled()) {
             this._ehrBloodOxygenSaturationStore = Injector.Container.resolve(BloodOxygenSaturationStore);
@@ -68,10 +72,22 @@ export class BloodOxygenSaturationService {
     };
 
     fetchAndStoreSpO2Data = async () => {
-        const senseDeviceVitalsService = new SenseDeviceVitalsService();
-        const spo2Data = await senseDeviceVitalsService.searchSpo2(`${process.env.SENSE_PATIENT_ID}`);
-        if (spo2Data) {
-            await this._bloodOxygenSaturationRepo.StoreSpo2Data(spo2Data);
+        try {
+            // Fetch all patient UserIds from the patient repository
+            const patientUserIds = await this._patientRepo.getAllPatientUserIds();
+    
+            // Create an instance of SenseDeviceVitalsService
+            const senseDeviceVitalsService = new SenseDeviceVitalsService();
+    
+            // Loop through each UserId and fetch SpO2 data
+            for (const userId of patientUserIds) {
+                const spo2Data = await senseDeviceVitalsService.searchSpo2(userId);
+                if (spo2Data) {
+                    await this._bloodOxygenSaturationRepo.StoreSpo2Data(spo2Data);
+                }
+            }
+        } catch (error) {
+            Logger.instance().log(`Error fetching and storing SpO2 data: ${error}`);
         }
     };
 
