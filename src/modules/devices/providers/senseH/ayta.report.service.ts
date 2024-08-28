@@ -122,11 +122,11 @@ export class ReportService {
                     const model: DocumentDomainModel = {
                         id                        : report.id,
                         EhrId                     : report.id,
-                        DisplayId                 : "DID123",
+                        DisplayId                 : "SENSE",
                         DocumentType              : DocumentTypes.LabReport,
-                        PatientUserId             : report.id,
+                        PatientUserId             : report.PatientId,
                         MedicalPractitionerUserId : null,
-                        UploadedByUserId          : report.id,
+                        UploadedByUserId          : report.PatientId,
                         AssociatedVisitId         : null,
                         AssociatedOrderId         : null,
                         MedicalPractionerRole     : null,
@@ -142,8 +142,8 @@ export class ReportService {
                         FileMetadata           : model.FileMetaData,
                         IsMultiResolutionImage : false,
                         IsPublicResource       : false,
-                        OwnerUserId            : model.id,
-                        UploadedByUserId       : model.id
+                        OwnerUserId            : model.PatientUserId,
+                        UploadedByUserId       : model.PatientUserId
                     };
 
                     const fileResourceDto = await this._fileResourceService.upload(fileResourceDomainModel);
