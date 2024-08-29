@@ -18,9 +18,10 @@ RUN npm install -g typescript
 COPY src ./src
 COPY tsconfig.json ./
 RUN npm cache clean --force
-RUN rm -rf node_modules
+# RUN rm -rf node_modules
 # RUN npm rm @types/glob @types/rimraf minimatch @types/minimatch
 RUN npm install
+RUN rm -rf ./node_modules/@types/glob
 RUN npm run build
 
 ##RUN npm run build
