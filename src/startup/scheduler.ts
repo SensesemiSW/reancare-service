@@ -22,7 +22,6 @@ import { BloodPressureService } from '../services/clinical/biometrics/blood.pres
 import { BloodOxygenSaturationService } from '../services/clinical/biometrics/blood.oxygen.saturation.service';
 
 ///////////////////////////////////////////////////////////////////////////
-
 export class Scheduler {
 
     //#region Static privates
@@ -52,7 +51,7 @@ export class Scheduler {
                 this.scheduleFileCleanup();
                 this.scheduleMedicationReminders();
                 this.scheduleCreateMedicationTasks();
-                this.scheduleMonthlyCustomTasks();
+                //this.scheduleMonthlyCustomTasks();
                 this.scheduleDailyCareplanPushTasks();
                 this.scheduleDailyHighRiskCareplan();
                 this.scheduleHsSurvey();
@@ -63,6 +62,8 @@ export class Scheduler {
                 this.scheduleCurrentTimezoneUpdate();
                 this.scheduleDailyStatistics();
                 this.scheduleStrokeSurvey();
+                this.scheduleStrokeSurveyTextMessage();
+
                 this.scheduleFetchAdminDataFromSenseDevices();
                 this.scheduleFetchReportDataFromSenseDevices();
                 this.scheduleFetchDataFromSenseDevices();
@@ -70,6 +71,8 @@ export class Scheduler {
 
                 //this.scheduleDaillyPatientTasks();
                 this.scheduleCareplanRegistrationRemindersForOldUsers();
+                this.scheduleHFHelperTextMessage();
+                this.scheduleGGHNFollowUpReminder();
 
                 const runOnceScheduler = RunOnceScheduler.instance();
                 runOnceScheduler.schedule(Scheduler._schedules);
@@ -141,7 +144,7 @@ export class Scheduler {
         });
     };
 
-    private scheduleMonthlyCustomTasks = () => {
+    /*private scheduleMonthlyCustomTasks = () => {
         cron.schedule(Scheduler._schedules['ScheduleCustomTasks'], () => {
             (async () => {
                 Logger.instance().log('Running scheduled jobs: Schedule Custom Tasks...');
@@ -149,7 +152,7 @@ export class Scheduler {
                 await customActionHandler.scheduledMonthlyRecurrentTasks();
             })();
         });
-    };
+    };*/
 
     private scheduleCareplanRegistrationReminders = () => {
         cron.schedule(Scheduler._schedules['CareplanRegistrationReminder'], () => {
@@ -174,9 +177,8 @@ export class Scheduler {
     private scheduleDailyCareplanPushTasks = () => {
         cron.schedule(Scheduler._schedules['ScheduleDailyCareplanPushTasks'], () => {
             (async () => {
-                Logger.instance().log('Running scheduled jobs: Schedule Maternity Careplan Task...');
-                const careplanService = Injector.Container.resolve(CareplanService);
-                await careplanService.scheduleDailyCareplanPushTasks();
+                var customActionHandler = new CustomActionsHandler();
+                await customActionHandler.scheduleDailyCareplanPushTasks();
             })();
         });
     };
@@ -211,6 +213,16 @@ export class Scheduler {
         });
     };
 
+    private scheduleStrokeSurveyTextMessage = () => {
+        cron.schedule(Scheduler._schedules['ScheduleStrokeSurveyTextMessage'], () => {
+            (async () => {
+                Logger.instance().log('Running scheduled jobs: Schedule Stroke Survey text message...');
+                var customActionHandler = new CustomActionsHandler();
+                await customActionHandler.scheduleStrokeSurveyTextMessage();
+            })();
+        });
+    };
+
     private scheduleReminderOnNoActionToDonationRequest = () => {
         cron.schedule(Scheduler._schedules['ReminderOnNoActionToDonationRequest'], () => {
             (async () => {
@@ -239,6 +251,26 @@ export class Scheduler {
                 Logger.instance().log('Running scheducled jobs: Update Current timezone...');
                 var service = Injector.Container.resolve(UserService);
                 await service.updateCurrentTimezone();
+            })();
+        });
+    };
+
+    private scheduleHFHelperTextMessage = () => {
+        cron.schedule(Scheduler._schedules['ScheduleHFHelperTextMessage'], () => {
+            (async () => {
+                Logger.instance().log('Running scheduled jobs: Schedule HF Helper SMS...');
+                var customActionHandler = new CustomActionsHandler();
+                await customActionHandler.scheduleHFHelperTextMessage();
+            })();
+        });
+    };
+
+    private scheduleGGHNFollowUpReminder  = () => {
+        cron.schedule(Scheduler._schedules['ScheduleGGHNFollowUpReminder'], () => {
+            (async () => {
+                Logger.instance().log('Running scheduled jobs: GGHNFollowUpReminder...');
+                var customActionHandler = new CustomActionsHandler();
+                customActionHandler.scheduleGGHNFollowUpReminder();
             })();
         });
     };

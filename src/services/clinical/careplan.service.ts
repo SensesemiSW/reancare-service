@@ -154,20 +154,16 @@ export class CareplanService implements IUserActionService {
 
             for (const activity of scheduledActivities) {
                 const message = activity.Description;
-                let patient = null;
-                if (activity.PlanCode === 'Donor-Reminders') {
-                    patient = await this.getDonor(activity.PatientUserId);
-                } else {
-                    patient = await this.getPatient(activity.PatientUserId);
-                }
+                const patient = await this.getUser(activity.PatientUserId);
+
                 let phoneNumber = null;
                 if (message.includes("Messages")) {
-                    phoneNumber = patient.User.Person.TelegramChatId;
+                    phoneNumber = patient.Person.TelegramChatId;
                 } else {
-                    phoneNumber = patient.User.Person.Phone;
+                    phoneNumber = patient.Person.Phone;
                 }
-                const payload = { PersonName: patient.User.Person.DisplayName };
-
+                const payload = { PersonName: patient.Person.DisplayName };
+                
                 //Set fifth day reminder flag true for patient
                 if (activity.Type === "reminder_three") {
                     await this._donationCommunicationRepo.create(
@@ -195,6 +191,10 @@ export class CareplanService implements IUserActionService {
 
     public getPatientEnrollments = async (patientUserId: string, isActive: boolean) => {
         return await this._careplanRepo.getPatientEnrollments(patientUserId, isActive);
+    };
+
+    public getEnrollment = async (enrollmentId: uuid): Promise<EnrollmentDto> => {
+        return await this._careplanRepo.getCareplanEnrollment(enrollmentId);
     };
 
     public getCompletedEnrollments = async (daysPassed: number, planNames : string[]) => {
@@ -472,25 +472,23 @@ export class CareplanService implements IUserActionService {
         return patientDto;
     }
 
-    private async getDonor(donorUserId: uuid) {
-
-        var donorDto = await this._donorRepo.getByUserId(donorUserId);
-
-        var user = await this._userRepo.getById(donorDto.UserId);
+    private async getUser(patientUserId: uuid) {
+        var user = await this._userRepo.getById(patientUserId);
         if (user.Person == null) {
             user.Person = await this._personRepo.getById(user.PersonId);
         }
-        donorDto.User = user;
-        return donorDto;
+        return user;
     }
 
-    private async createScheduledUserTasks(patientUserId, careplanActivities) {
+    private async createScheduledUserTasks(patientUserId, careplanActivities, enrollmentDetails?) {
 
         // create user tasks based on activities
 
         var userDto = await this._userRepo.getById(patientUserId);
         var timezoneOffset = '+05:30';
-        if (userDto.DefaultTimeZone !== null) {
+        if (userDto.CurrentTimeZone !== null) {
+            timezoneOffset = userDto.CurrentTimeZone;
+        } else if (userDto.DefaultTimeZone !== null) {
             timezoneOffset = userDto.DefaultTimeZone;
         }
 
@@ -516,11 +514,19 @@ export class CareplanService implements IUserActionService {
             });
 
             activities.forEach( async (activity) => {
-                var dayStartStr = activity.ScheduledAt.toISOString();
-                var dayStart = TimeHelper.getDateWithTimezone(dayStartStr, timezoneOffset);
-                dayStart = TimeHelper.addDuration(dayStart, 7, DurationType.Hour); // Start at 7:00 AM
-                var scheduleDelay = (activity.Sequence - 1) * 1;
-                var startTime = TimeHelper.addDuration(dayStart, scheduleDelay, DurationType.Second);   // Scheduled at every 1 sec
+                let startTime = null;
+                const dayStartStr = activity.ScheduledAt.toISOString();
+                const isTimeZero = TimeHelper.isTimeZero(dayStartStr);
+                if (isTimeZero === true) {
+                    var dayStart = TimeHelper.getDateWithTimezone(dayStartStr, timezoneOffset);
+                    dayStart = TimeHelper.addDuration(dayStart, 7, DurationType.Hour); // Start at 7:00 AM
+                    var scheduleDelay = (activity.Sequence - 1) * 1;
+                    startTime = TimeHelper.addDuration(dayStart, scheduleDelay, DurationType.Second);   // Scheduled at every 1 sec
+                } else {
+                    const offset = TimeHelper.getTimezoneOffsets(timezoneOffset, DurationType.Minute);
+                    startTime = TimeHelper.addDuration(new Date(dayStartStr), offset, DurationType.Minute);
+                    Logger.instance().log(`UTC Date: ${startTime}`);
+                }
                 var endTime = TimeHelper.addDuration(dayStart, 16, DurationType.Hour);       // End at 11:00 PM
 
                 var userTaskModel: UserTaskDomainModel = {
@@ -532,7 +538,9 @@ export class CareplanService implements IUserActionService {
                     ActionType         : UserActionType.Careplan,
                     ActionId           : activity.id,
                     ScheduledStartTime : startTime,
-                    ScheduledEndTime   : endTime
+                    ScheduledEndTime   : endTime,
+                    Channel            : enrollmentDetails.Channel ?? null,
+                    TenantName         : enrollmentDetails.TenantName ?? null,
                 };
 
                 var userTask = await this._userTaskRepo.create(userTaskModel);
@@ -580,7 +588,8 @@ export class CareplanService implements IUserActionService {
                 ScheduledAt      : x.ScheduledAt,
                 Sequence         : x.Sequence,
                 Frequency        : x.Frequency,
-                Status           : x.Status
+                Status           : x.Status,
+                RawContent       : x.RawContent,
             };
 
             return a;
@@ -599,7 +608,8 @@ export class CareplanService implements IUserActionService {
         var patientDetails: PatientDetailsDto = await this._patientRepo.getByUserId(dto.PatientUserId);
         await this._ehrCareplanActivityService.addCareplanActivitiesToEHR(careplanActivities, patientDetails);
 
-        await this.createScheduledUserTasks(enrollmentDetails.PatientUserId, careplanActivities);
+        //task scheduling
+        await this.createScheduledUserTasks(enrollmentDetails.PatientUserId, careplanActivities, enrollmentDetails);
 
         return dto;
     }
@@ -679,6 +689,16 @@ export class CareplanService implements IUserActionService {
 
         const provider = "REAN";
         return await this._handler.scheduleDailyHighRiskCareplan(provider);
+    };
+
+    public getPatientActiveEnrollments = async (patientUserId: string ) => {
+        return await this._careplanRepo.getPatientActiveEnrollments(patientUserId);
+    };
+
+    public stop = async (enrollment: EnrollmentDto ) => {
+        await this._careplanRepo.deleteFutureCareplanTask(enrollment);
+        const updatedCareplan = await this._careplanRepo.stop(enrollment.id);
+        return updatedCareplan;
     };
 
     //#endregion

@@ -5,12 +5,17 @@ import { Logger } from '../common/logger';
 import { uuid } from '../domain.types/miscellaneous/system.types';
 import { AHAActions } from './aha/aha.actions';
 import { EnrollmentDomainModel } from '../domain.types/clinical/careplan/enrollment/enrollment.domain.model';
+import { UserTaskSenderService } from '../services/users/user/user.task.sender.service';
+import { Injector } from '../startup/injector';
+import { GGHNActions } from './gghn/gghn.actions';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
 export class CustomActionsHandler {
 
     _ahaActions: AHAActions = new AHAActions();
+
+    _gghnActions: GGHNActions = new GGHNActions();
 
     //#region Public
 
@@ -109,6 +114,47 @@ export class CustomActionsHandler {
         }
     };
 
+    public scheduleStrokeSurveyTextMessage = async () => {
+        try {
+            await this._ahaActions.scheduleStrokeSurveyTextMessage();
+        }
+        catch (error) {
+            Logger.instance().log(`Error sending stroke survey text message.`);
+        }
+    };
+
+    public scheduleHFHelperTextMessage = async () => {
+        try {
+            await this._ahaActions.scheduleHFHelperTextMessage();
+        }
+        catch (error) {
+            Logger.instance().log(`Error sending SMS to HF Helper users.`);
+        }
+    };
+
+    public scheduleGGHNFollowUpReminder = async () => {
+        try {
+            await this._gghnActions.scheduleGGHNFollowUpReminder();
+        }
+        catch (error) {
+            Logger.instance().log(`Error in schedule of GGHN FollowUp Reminder.`);
+        }
+    };
+
+    public scheduleDailyCareplanPushTasks = async () => {
+        try {
+            if (this.isForBotChannel()) {
+                Logger.instance().log('Running scheduled jobs: Schedule Maternity Careplan Task...');
+                const nextMinutes = 15;
+                const userTaskService = Injector.Container.resolve(UserTaskSenderService);
+                await userTaskService.sendUserTasks(nextMinutes);
+            }
+        }
+        catch (error) {
+            Logger.instance().log(`Error sending careplan activity to bot users.`);
+        }
+    };
+
     //#endregion
 
     //#region Privates
@@ -126,6 +172,13 @@ export class CustomActionsHandler {
         process.env.NODE_ENV === 'uat';
 
         return isForAHA;
+    };
+
+    private isForBotChannel = () => {
+
+        const systemIdentifier = ConfigurationManager.SystemIdentifier();
+        const isForBotChannel = systemIdentifier.includes('REAN HealthGuru');
+        return isForBotChannel;
     };
 
     //#endregion

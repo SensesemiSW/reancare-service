@@ -1,11 +1,13 @@
 import {
     BelongsTo, Column, CreatedAt, DataType, DeletedAt, ForeignKey,
+    HasOne,
     IsDate, IsUUID, Length, Model, PrimaryKey, Table, UpdatedAt
 } from 'sequelize-typescript';
 import { v4 } from 'uuid';
 import Person from '../../person/person.model';
 import Role from '../../role/role.model';
 import Tenant from '../../tenant/tenant.model';
+import HealthReportSetting from '../patient/health.report.setting.model';
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -105,6 +107,9 @@ export default class User extends Model {
         defaultValue : false,
     })
     IsTestUser: boolean;
+
+    @HasOne(() => HealthReportSetting)
+    HealthReportSetting: HealthReportSetting;
 
     @Column
     @CreatedAt

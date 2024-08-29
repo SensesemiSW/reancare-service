@@ -29,14 +29,21 @@ export class MessagingService {
     };
 
     sendWhatsappWithReanBot = async (toPhone: string, message: any, provider:string,
-        type:string, PlanCode:string, payload = null): Promise<boolean> => {
+        type:string, PlanCode:string, payload = null, channelName?: string ): Promise<boolean> => {
 
         let templateName = null;
-        const channel = "whatsappMeta";
+        const channel = await this.getBotChannel(channelName);
 
         toPhone = toPhone.replace(/\D/g, '');
         message = JSON.parse(message);
-        if (message.Variables) {
+        if (message.Variables || message.TemplateVariables) {
+            if (message.TemplateVariables) {
+                message.Variables = message.TemplateVariables;
+                const buttonIds = message.TemplateButtonIds;
+                if ((buttonIds != null && (Array.isArray(buttonIds))) ? buttonIds.length : false) {
+                    message.ButtonsIds = message.TemplateButtonIds;
+                }
+            }
             templateName = type;
             type = "template";
         }
@@ -46,7 +53,7 @@ export class MessagingService {
         return true;
     };
 
-    private async sendMessage (provider, channel, toPhone, type, templateName, message, payload) {
+    public async sendMessage (provider, channel, toPhone, type, templateName, message, payload) {
         const reanBotBaseUrl = process.env.REANBOT_BACKEND_BASE_URL;
         const urlToken = process.env.REANBOT_WEBHOOK_CLIENT_URL_TOKEN;
         const client = await this.getClientByProvider(provider);
@@ -74,6 +81,8 @@ export class MessagingService {
         if (resp1.statusCode !== 200) {
             Logger.instance().log(`Failed to send message to phone number: ${toPhone}`);
             return false;
+        } else {
+            return true;
         }
     }
 
@@ -86,6 +95,14 @@ export class MessagingService {
             "GMU"            : "GMU",
         };
         return clientName[provider] ?? provider;
+    }
+
+    private getBotChannel (channel) {
+        const channnelName = {
+            "WhatsApp"     : "whatsappMeta",
+            "WhatsappWati" : "whatsappWati"
+        };
+        return channnelName[channel] ?? "whatsappMeta";
     }
 
 }

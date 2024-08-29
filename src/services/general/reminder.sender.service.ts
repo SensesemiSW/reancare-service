@@ -1,6 +1,6 @@
 import { IReminderScheduleRepo } from "../../database/repository.interfaces/general/reminder.schedule.repo.interface";
 import {
-    NotificationType
+    ReminderNotificationType
 } from '../../domain.types/general/reminder/reminder.domain.model';
 import { Logger } from "../../common/logger";
 import { Loader } from "../../startup/loader";
@@ -64,22 +64,23 @@ export class ReminderSenderService {
                 const reminder = schedule.Reminder;
                 const notificationType = reminder.NotificationType;
 
-                if (notificationType === NotificationType.SMS) {
+                if (notificationType === ReminderNotificationType.SMS) {
                     await this.sendReminderBySMS(user, reminder, schedule);
                 }
-                else if (notificationType === NotificationType.WhatsApp) {
+                else if (notificationType === ReminderNotificationType.WhatsApp ||
+                    notificationType === ReminderNotificationType.WhatsappWati) {
                     await this.sendReminderByWhatsApp(user, reminder, schedule);
                 }
-                else if (notificationType === NotificationType.Email) {
+                else if (notificationType === ReminderNotificationType.Email) {
                     await this.sendReminderByEmail(user, reminder, schedule);
                 }
-                else if (notificationType === NotificationType.Webhook) {
+                else if (notificationType === ReminderNotificationType.Webhook) {
                     await this.sendReminderByWebhook(user, reminder, schedule);
                 }
-                else if (notificationType === NotificationType.MobilePush) {
+                else if (notificationType === ReminderNotificationType.MobilePush) {
                     await this.sendReminderByMobilePush(user, reminder, schedule);
                 }
-                else if (notificationType === NotificationType.Telegram) {
+                else if (notificationType === ReminderNotificationType.Telegram) {
                     await this.sendReminderByTelegram(user, reminder, schedule);
                 }
                 else {
@@ -105,7 +106,7 @@ export class ReminderSenderService {
         const { messagingService, phone, message, templateName, clientName } =
             await ReminderSenderService.getUserWhatsAppDetails(user, reminder, schedule);
         const sent = await messagingService.sendWhatsappWithReanBot(phone, message, clientName,
-            templateName, null, null);
+            templateName, null, null, reminder.NotificationType);
         await ReminderSenderService.markAsDelivered(sent, schedule.id);
         return true;
     };

@@ -21,6 +21,9 @@ export class CareplanValidator extends BaseValidator {
             EndDateStr    : request.body.EndDate,
             DayOffset     : request.body.DayOffset,
             WeekOffset    : request.body.WeekOffset,
+            Channel       : request.body.Channel,
+            TenantName    : request.body.TenantName,
+            IsTest        : request.body.IsTest ?? false,
         };
 
         return model;
@@ -53,6 +56,10 @@ export class CareplanValidator extends BaseValidator {
         return this.updateRiskDomainModel(request);
     };
 
+    stop = async (request: express.Request) => {
+        await this.validateUuid(request, 'id', Where.Param, true, false);
+    };
+
     private async validateCreateBody(request) {
         await this.validateString(request, 'Provider', Where.Body, true, false);
         await this.validateString(request, 'PlanCode', Where.Body, true, false);
@@ -61,6 +68,9 @@ export class CareplanValidator extends BaseValidator {
         await this.validateString(request, 'EndDate', Where.Body, false, false);
         await this.validateInt(request, 'DayOffset', Where.Body, false, false);
         await this.validateInt(request, 'WeekOffset', Where.Body, false, false);
+        await this.validateString(request, 'TenantName', Where.Body, false, false);
+        await this.validateString(request, 'Channel', Where.Body, false, false);
+        await this.validateBoolean(request, 'IsTest', Where.Body, false, false);
         this.validateRequest(request);
     }
 

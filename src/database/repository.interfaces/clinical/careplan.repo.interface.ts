@@ -18,7 +18,7 @@ export interface ICareplanRepo {
 
     updateRisk(model: EnrollmentDomainModel): Promise<EnrollmentDto>;
 
-    getCareplanEnrollment(careplanId: uuid): Promise<EnrollmentDto>;
+    getCareplanEnrollment(enrollmentId: uuid): Promise<EnrollmentDto>;
 
     getPatientEnrollments(patientUserId: uuid, isActive: boolean): Promise<EnrollmentDto[]>;
 
@@ -68,4 +68,7 @@ export interface ICareplanRepo {
 
     deleteFutureCareplanTask(enrollment): Promise<number>;
 
+    getPatientActiveEnrollments(patientUserId: uuid): Promise<EnrollmentDto[]>;
+
+    stop(enrollmentId: uuid): Promise<EnrollmentDto>;
 }

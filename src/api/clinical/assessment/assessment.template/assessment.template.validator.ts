@@ -25,7 +25,7 @@ export class AssessmentTemplateValidator extends BaseValidator {
             Provider                    : request.body.Provider ?? null,
             ServeListNodeChildrenAtOnce : request.body.ServeListNodeChildrenAtOnce ?? null,
             TotalNumberOfQuestions      : request.body.TotalNumberOfQuestions ?? null,
-            TenantId                    : request.body.TenantId ?? null,
+            TenantId                    : request.body.TenantId ?? request.currentUser.TenantId,
         };
 
         return model;
@@ -72,7 +72,7 @@ export class AssessmentTemplateValidator extends BaseValidator {
         await this.validateBoolean(request, 'ServeListNodeChildrenAtOnce', Where.Body, false, true);
         await this.validateString(request, 'DisplayCode', Where.Body, false, false);
         await this.validateInt(request, 'TotalNumberOfQuestions', Where.Body, false, false);
-        await this.validateUuid(request, 'TenantId', Where.Body, true, false);
+        await this.validateUuid(request, 'TenantId', Where.Body, false, true);
         this.validateRequest(request);
     }
 
@@ -186,6 +186,7 @@ export class AssessmentTemplateValidator extends BaseValidator {
         await this.validateDecimal(request, 'Score', Where.Body, false, false);
         await this.validateDecimal(request, 'Sequence', Where.Body, false, false);
         await this.validateAny(request, 'CorrectAnswer', Where.Body, false, false);
+        await this.validateObject(request, 'RawData', Where.Body, false, false);
 
         this.validateRequest(request);
 
@@ -237,7 +238,7 @@ export class AssessmentTemplateValidator extends BaseValidator {
         return request.body;
     };
 
-    searchNode = async (request: express.Request): Promise<AssessmentNodeSearchFilters> => {
+    searchNodes = async (request: express.Request): Promise<AssessmentNodeSearchFilters> => {
         await this.validateString(request, 'title', Where.Query, false, false);
         await this.validateString(request, 'nodeType', Where.Query, false, false, true);
         await this.validateString(request, 'templateId', Where.Query, false, false, true);

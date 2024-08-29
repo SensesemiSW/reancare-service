@@ -76,7 +76,7 @@ export const RepeatAfterEveryUnitList: RepeatAfterEveryNUnit [] = [
     RepeatAfterEveryNUnit.Year,
 ];
 
-export enum NotificationType {
+export enum ReminderNotificationType {
     Email          = 'Email',
     SMS            = 'SMS',
     WebPush        = 'WebPush',
@@ -85,19 +85,21 @@ export enum NotificationType {
     WhatsApp       = 'WhatsApp',
     Telegram       = 'Telegram',
     Slack          = 'Slack',
-    MicrosoftTeams = 'MicrosoftTeams'
+    MicrosoftTeams = 'MicrosoftTeams',
+    WhatsappWati   = 'WhatsappWati',
 }
 
-export const NotificationTypeList: NotificationType [] = [
-    NotificationType.Email,
-    NotificationType.SMS,
-    NotificationType.WebPush,
-    NotificationType.MobilePush,
-    NotificationType.Webhook,
-    NotificationType.WhatsApp,
-    NotificationType.Telegram,
-    NotificationType.Slack,
-    NotificationType.MicrosoftTeams,
+export const ReminderNotificationTypeList: ReminderNotificationType [] = [
+    ReminderNotificationType.Email,
+    ReminderNotificationType.SMS,
+    ReminderNotificationType.WebPush,
+    ReminderNotificationType.MobilePush,
+    ReminderNotificationType.Webhook,
+    ReminderNotificationType.WhatsApp,
+    ReminderNotificationType.Telegram,
+    ReminderNotificationType.Slack,
+    ReminderNotificationType.MicrosoftTeams,
+    ReminderNotificationType.WhatsappWati,
 ];
 
 export interface ReminderDomainModel {
@@ -116,7 +118,7 @@ export interface ReminderDomainModel {
     RepeatAfterEvery     ?: number;
     RepeatAfterEveryNUnit?: RepeatAfterEveryNUnit;
     HookUrl              ?: string;
-    NotificationType     ?: NotificationType;
+    NotificationType     ?: ReminderNotificationType;
     RawContent            : string;
 }
 
@@ -138,7 +140,7 @@ export interface ReminderDto {
     DeliveredSchedules   ?: number;
     PendingSchedules     ?: number;
     AcknowledgedSchedules?: number;
-    NotificationType     ?: NotificationType;
+    NotificationType     ?: ReminderNotificationType;
     RawContent            : string;
     CreatedAt             : Date;
     UpdatedAt             : Date;

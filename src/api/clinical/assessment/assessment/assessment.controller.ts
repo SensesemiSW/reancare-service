@@ -14,10 +14,16 @@ import { CustomActionsHandler } from '../../../../custom/custom.actions.handler'
 import { AssessmentDto } from '../../../../domain.types/clinical/assessment/assessment.dto';
 import { Logger } from '../../../../common/logger';
 import { EHRAssessmentService } from '../../../../modules/ehr.analytics/ehr.services/ehr.assessment.service';
+import { BaseController } from '../../../../api/base.controller';
+import { AssessmentDomainModel } from '../../../../domain.types/clinical/assessment/assessment.domain.model';
+import { PermissionHandler } from '../../../../auth/custom/permission.handler';
+import { AssessmentSearchFilters } from '../../../../domain.types/clinical/assessment/assessment.search.types';
+import { EHRPatientService } from '../../../../modules/ehr.analytics/ehr.services/ehr.patient.service';
+import { HealthProfileService } from '../../../../services/users/patient/health.profile.service';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-export class AssessmentController {
+export class AssessmentController extends BaseController {
 
     //#region member variables and constructors
 
@@ -31,7 +37,15 @@ export class AssessmentController {
 
     _ehrAssessmentService = Injector.Container.resolve(EHRAssessmentService);
 
+    _ehrPatientService = Injector.Container.resolve(EHRPatientService);
+
+    _healthProfileService = Injector.Container.resolve(HealthProfileService);
+
     _validator: AssessmentValidator = new AssessmentValidator();
+
+    constructor() {
+        super();
+    }
 
     //#endregion
 
@@ -39,7 +53,8 @@ export class AssessmentController {
 
     create = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
-            const model = await this._validator.create(request);
+            const model: AssessmentDomainModel = await this._validator.create(request);
+            await this.authorizeOne(request, model.PatientUserId);
             const assessment = await this._service.create(model);
             if (assessment == null) {
                 throw new ApiError(400, 'Cannot create record for assessment!');
@@ -56,13 +71,13 @@ export class AssessmentController {
     getById = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             const id: uuid = await this._validator.getParamUuid(request, 'id');
-            const assessment = await this._service.getById(id);
-            if (assessment == null) {
+            const record = await this._service.getById(id);
+            if (record == null) {
                 throw new ApiError(404, 'Assessment record not found.');
             }
-
+            await this.authorizeOne(request, record.PatientUserId);
             ResponseHandler.success(request, response, 'Assessment record retrieved successfully!', 200, {
-                Assessment : assessment,
+                Assessment : record,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -71,7 +86,9 @@ export class AssessmentController {
 
     search = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
-            const filters = await this._validator.search(request);
+            let filters = await this._validator.search(request);
+            filters = await this.authorizeSearch(request, filters);
+
             const searchResults = await this._service.search(filters);
 
             const count = searchResults.Items.length;
@@ -90,11 +107,11 @@ export class AssessmentController {
         try {
             const domainModel = await this._validator.update(request);
             const id: uuid = await this._validator.getParamUuid(request, 'id');
-            const existingRecord = await this._service.getById(id);
-            if (existingRecord == null) {
+            const record = await this._service.getById(id);
+            if (record == null) {
                 throw new ApiError(404, 'Assessment record not found.');
             }
-
+            await this.authorizeOne(request, record.PatientUserId);
             const updated = await this._service.update(domainModel.id, domainModel);
             if (updated == null) {
                 throw new ApiError(400, 'Unable to update assessment record!');
@@ -111,11 +128,11 @@ export class AssessmentController {
     delete = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             const id: uuid = await this._validator.getParamUuid(request, 'id');
-            const existingRecord = await this._service.getById(id);
-            if (existingRecord == null) {
+            const record = await this._service.getById(id);
+            if (record == null) {
                 throw new ApiError(404, 'Assessment record not found.');
             }
-
+            await this.authorizeOne(request, record.PatientUserId);
             const deleted = await this._service.delete(id);
             if (!deleted) {
                 throw new ApiError(400, 'Assessment record cannot be deleted.');
@@ -132,10 +149,11 @@ export class AssessmentController {
     startAssessment = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             const id: uuid = await this._validator.getParamUuid(request, 'id');
-            const assessment = await this._service.getById(id);
-            if (assessment == null) {
+            const record = await this._service.getById(id);
+            if (record == null) {
                 throw new ApiError(404, 'Assessment record not found.');
             }
+            await this.authorizeOne(request, record.PatientUserId);
             const next = await this._service.startAssessment(id);
 
             ResponseHandler.success(request, response, 'Assessment started successfully!', 200, {
@@ -149,14 +167,15 @@ export class AssessmentController {
     scoreAssessment = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             const id: uuid = await this._validator.getParamUuid(request, 'id');
-            const assessment = await this._service.getById(id);
-            if (assessment == null) {
+            const record = await this._service.getById(id);
+            if (record == null) {
                 throw new ApiError(404, 'Assessment record not found.');
             }
-            if (assessment.ScoringApplicable) {
-                var { score, reportUrl } = await this.generateScoreReport(assessment);
+            await this.authorizeOne(request, record.PatientUserId);
+            if (record.ScoringApplicable) {
+                const { score, reportUrl } = await this.generateScoreReport(record);
                 ResponseHandler.success(request, response, 'Assessment started successfully!', 200, {
-                    AssessmentId : assessment.id,
+                    AssessmentId : record.id,
                     Score        : score,
                     ReportUrl    : reportUrl,
                 });
@@ -175,6 +194,7 @@ export class AssessmentController {
             if (assessment == null) {
                 throw new ApiError(404, 'Assessment record not found.');
             }
+            await this.authorizeOne(request, assessment.PatientUserId);
             const progressStatus: ProgressStatus = await this._service.getAssessmentStatus(id);
             if (progressStatus === ProgressStatus.Pending) {
                 const next = await this._service.startAssessment(id);
@@ -210,6 +230,7 @@ export class AssessmentController {
             if (assessment == null) {
                 throw new ApiError(404, 'Assessment record not found.');
             }
+            await this.authorizeOne(request, assessment.PatientUserId);
             const questionId: uuid = await this._validator.getParamUuid(request, 'questionId');
             const question = await this._service.getQuestionById(id, questionId);
             if (question == null) {
@@ -233,7 +254,7 @@ export class AssessmentController {
             if (assessment == null) {
                 throw new ApiError(404, 'Assessment record not found.');
             }
-
+            await this.authorizeOne(request, assessment.PatientUserId);
             const question = await this._service.getQuestionById(id, questionId);
             if (question == null) {
                 throw new ApiError(404, 'Assessment question not found.');
@@ -245,6 +266,14 @@ export class AssessmentController {
             }
 
             var answerResponse: AssessmentQuestionResponseDto = await this._service.answerQuestion(answerModel);
+
+            var options = await this._service.getQuestionById(assessment.id, answerResponse.Answer.NodeId);
+            await this._ehrAssessmentService.addEHRRecordForAppNames(assessment, answerResponse, options);
+
+            //check if questions are related to race and ethnicity
+            if (assessment.Provider && assessment.Provider === 'REAN' ) {
+                await this.updateHealthProfileAndEhrDataForPatient(answerResponse, question, assessment);
+            }
 
             const isAssessmentCompleted = answerResponse === null || answerResponse?.Next === null;
             if (isAssessmentCompleted) {
@@ -260,9 +289,9 @@ export class AssessmentController {
                         answerResponse['AssessmentScoreReport'] = reportUrl;
                     }
                 }
+                var updatedAssessment = await this._service.getById(assessment.id);
+                await this._ehrAssessmentService.addEHRRecordForAppNames(updatedAssessment, null, null);
             }
-
-            await this._ehrAssessmentService.addEHRRecordForAppNames(assessment);
 
             const message = isAssessmentCompleted
                 ? 'Assessment has completed successfully!'
@@ -279,6 +308,12 @@ export class AssessmentController {
         try {
             const id: uuid = await this._validator.getParamUuid(request, 'id');
             const listId: uuid = await this._validator.getParamUuid(request, 'listId');
+
+            const assessment = await this._service.getById(id);
+            if (assessment == null) {
+                throw new ApiError(404, 'Assessment record not found.');
+            }
+            await this.authorizeOne(request, assessment.PatientUserId);
 
             const node = await this._service.getNodeById(listId);
             Logger.instance().log(`Node: ${JSON.stringify(node)}`);
@@ -305,13 +340,15 @@ export class AssessmentController {
                 }
             }
 
-            const assessment = await this._service.getById(id);
-            if (assessment == null) {
-                throw new ApiError(404, 'Assessment record not found.');
-            }
-
             var answerResponse = await this._service.answerQuestionList(assessment.id, listNode, answerModels);
             Logger.instance().log(`AnswerResponse: ${JSON.stringify(answerResponse)}`);
+
+            for await (var ar of answerResponse.Answer) {
+                ar = JSON.parse(JSON.stringify(ar));
+                ar.Answer['SubQuestion']  = ar.Answer.Title;
+                ar.Answer.Title = listNode.Title;
+                this._ehrAssessmentService.addEHRRecordForAppNames(assessment, ar, ar.Parent);
+            }
 
             answerResponse['AssessmentScore'] = null;
 
@@ -328,9 +365,10 @@ export class AssessmentController {
                         answerResponse['AssessmentScoreReport'] = reportUrl;
                     }
                 }
+                var updatedAssessment = await this._service.getById(assessment.id);
+                updatedAssessment['Score'] = JSON.stringify(answerResponse['AssessmentScore']);
+                await this._ehrAssessmentService.addEHRRecordForAppNames(updatedAssessment, null, null);
             }
-
-            await this._ehrAssessmentService.addEHRRecordForAppNames(assessment);
 
             const message = isAssessmentCompleted
                 ? 'Assessment has completed successfully!'
@@ -389,6 +427,99 @@ export class AssessmentController {
 
         return { score, reportUrl };
     }
+
+    private async updateHealthProfileAndEhrDataForPatient(answerResponse: any, question : any, assessment: AssessmentDto) {
+        try {
+            var updated = null;
+            if (question.Title && question.Title.includes('What is your race?')) {
+                updated = {
+                    Race : answerResponse.Answer.ChosenOption.Text
+                };
+    
+                Logger.instance().log(`Race Question and Answer :: ${JSON.stringify(question.Title)} :: ${JSON.stringify(updated)}`);
+    
+            } else if (question.Title && question.Title.includes('What is your ethnicity?')) {
+                updated = {
+                    Ethnicity : answerResponse.Answer.ChosenOption.Text
+                };
+    
+                Logger.instance().log(`Ethnicity Question and Answer :: ${JSON.stringify(question.Title)} :: ${JSON.stringify(updated)}`);
+    
+            } else if (question.Title && question.Title.includes('What is your marital status?')) {
+                updated = {
+                    MaritalStatus : answerResponse.Answer.ChosenOption.Text
+                };
+                Logger.instance().log(`Marital status Question and Answer :: ${JSON.stringify(question.Title)} :: ${JSON.stringify(updated)}`);
+            } else if (question.Title && question.Title.includes('Do you currently smoke')) {
+                updated = {
+                    IsSmoker : answerResponse.Answer.ChosenOption.Text === 'Yes' ? 1 : 0
+                };
+                Logger.instance().log(`Is smoking Question and Answer :: ${JSON.stringify(question.Title)} :: ${JSON.stringify(updated)}`);
+            } else if (question.Title && question.Title.includes('survivor or caregiver')) {
+                updated = {
+                    StrokeSurvivorOrCaregiver : answerResponse.Answer.ChosenOption.Text
+                };
+                Logger.instance().log(`Survivor or Caregiver Question and Answer :: ${JSON.stringify(question.Title)} :: ${JSON.stringify(updated)}`);
+            } else if (question.Title && question.Title.includes('live alone')) {
+                updated = {
+                    LivingAlone : answerResponse.Answer.ChosenOption.Text === 'Yes' ? 1 : 0
+                };
+                Logger.instance().log(`Live alone Question and Answer :: ${JSON.stringify(question.Title)} :: ${JSON.stringify(updated)}`);
+            } else if (question.Title && question.Title.includes('work prior to your stroke')) {
+                updated = {
+                    WorkedPriorToStroke : answerResponse.Answer.ChosenOption.Text === 'Yes' ? 1 : 0
+                };
+                Logger.instance().log(`Work prior to your stroke Question and Answer :: ${JSON.stringify(question.Title)} :: ${JSON.stringify(updated)}`);
+            } else if (question.Title && question.Title.includes('alcoholic drink')) {
+                updated = {
+                    IsDrinker : answerResponse.Answer.ChosenOption.Text === 'Yes' ? 1 : 0
+                };
+                Logger.instance().log(`Alcoholic drink Question and Answer :: ${JSON.stringify(question.Title)} :: ${JSON.stringify(updated)}`);
+            }
+    
+            if (updated) {
+                Logger.instance().log(`Updating patient profile and EHR data : ${assessment.PatientUserId}`);
+                await this._healthProfileService.updateByPatientUserId(assessment.PatientUserId, updated);
+                updated['PatientUserId'] = assessment.PatientUserId;
+                await this._ehrPatientService.addEHRRecordHealthProfileForAppNames(updated);
+                return true;
+            }
+    
+            return false;
+    
+        } catch (error) {
+            Logger.instance().log(`Error in updating health profile & ehr static data through assessment: ${error}`);
+        }
+        
+    }
+
+    //#endregion
+
+    //#region Authorization
+
+    authorizeSearch = async (
+        request: express.Request,
+        searchFilters: AssessmentSearchFilters): Promise<AssessmentSearchFilters> => {
+
+        const currentUser = request.currentUser;
+
+        if (searchFilters.PatientUserId != null) {
+            if (searchFilters.PatientUserId !== request.currentUser.UserId) {
+                const hasConsent = await PermissionHandler.checkConsent(
+                    searchFilters.PatientUserId,
+                    currentUser.UserId,
+                    request.context
+                );
+                if (!hasConsent) {
+                    throw new ApiError(403, `Unauthorized`);
+                }
+            }
+        }
+        else {
+            searchFilters.PatientUserId = currentUser.UserId;
+        }
+        return searchFilters;
+    };
 
     //#endregion
 

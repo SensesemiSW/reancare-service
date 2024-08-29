@@ -43,9 +43,19 @@ export class PatientAppNameCache {
 
     private static cache: Map<uuid, string[]> = new Map();
 
-    static add(patientId: string, appNames: string[]): void {
+    public static add(patientId: string, appNames: string[]): void {
         PatientAppNameCache.cache.set(patientId, appNames);
     }
+
+    public static getEligibility = async (patientUserId: uuid) => {
+        const userService = Injector.Container.resolve(UserService);
+        const userDetails = await userService.getById(patientUserId);
+        
+        if (userDetails && userDetails.IsTestUser == false) {
+            return true;
+        }
+        return false;
+    };
 
     static update(patientId: string, appNames: string[]): void {
         PatientAppNameCache.cache.set(patientId, appNames);
@@ -53,7 +63,7 @@ export class PatientAppNameCache {
 
     static async get(patientId: string): Promise<string[] | undefined> {
         const list = PatientAppNameCache.cache.get(patientId);
-        if (!list) {
+        if (!list || list.length === 0) {
             const appNames = await getEligibleAppNames(patientId);
             PatientAppNameCache.cache.set(patientId, appNames);
         }
