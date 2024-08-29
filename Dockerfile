@@ -13,7 +13,7 @@ RUN apk add --update alpine-sdk
 RUN apk add chromium \
     harfbuzz
 WORKDIR /app
-COPY package*.json /app/
+COPY package.json /app/
 RUN npm install -g typescript
 COPY src ./src
 COPY tsconfig.json ./
@@ -21,7 +21,7 @@ RUN npm cache clean --force
 # RUN rm -rf node_modules
 # RUN npm rm @types/glob @types/rimraf minimatch @types/minimatch
 RUN npm install
-RUN rm -rf ./node_modules/@types/glob
+RUN rm -rf node_modules/@types/glob
 RUN npm run build
 
 ##RUN npm run build
@@ -45,7 +45,7 @@ RUN apk upgrade
 COPY . /app
 WORKDIR /app
 
-COPY package*.json /app/
+COPY package.json /app/
 RUN npm install pm2 -g
 RUN npm install sharp
 COPY --from=builder ./app/dist/ .
