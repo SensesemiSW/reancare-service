@@ -82,6 +82,10 @@ export class DocumentService {
         return Helper.generateDisplayId(prefix);
     };
 
+    getDocumentByReferenceId = async (referenceId: string): Promise<DocumentDto | null> => {
+        return await this._documentRepo.getDocumentByReferenceId(referenceId);
+    };
+
     //#endregion
 
 }

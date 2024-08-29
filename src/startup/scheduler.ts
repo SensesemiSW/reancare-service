@@ -20,6 +20,7 @@ import { ReportService } from '../modules/devices/providers/senseH/ayta.report.s
 import { SenseDeviceAdminService } from '../services/users/user/user.sense.admin.service';
 import { BloodPressureService } from '../services/clinical/biometrics/blood.pressure.service';
 import { BloodOxygenSaturationService } from '../services/clinical/biometrics/blood.oxygen.saturation.service';
+import { PatientService } from '../services/users/patient/patient.service';
 
 ///////////////////////////////////////////////////////////////////////////
 export class Scheduler {
@@ -63,12 +64,11 @@ export class Scheduler {
                 this.scheduleDailyStatistics();
                 this.scheduleStrokeSurvey();
                 this.scheduleStrokeSurveyTextMessage();
-
                 this.scheduleFetchAdminDataFromSenseDevices();
                 this.scheduleFetchReportDataFromSenseDevices();
                 this.scheduleFetchDataFromSenseDevices();
                 this.scheduleFetchlientAdminDataFromSenseDevices();
-
+                
                 //this.scheduleDaillyPatientTasks();
                 this.scheduleCareplanRegistrationRemindersForOldUsers();
                 this.scheduleHFHelperTextMessage();
@@ -308,11 +308,12 @@ export class Scheduler {
         cron.schedule(Scheduler._schedules['ScheduleFetchDataFromSenseDevices'], () => {
             (async () => {
                 Logger.instance().log('Running scheduled jobs: Schedule Fetch Patient Report from sense devices...');
-                const patientId = `${process.env.SENSE_PATIENT_ID}`;
+                var patientService = Injector.Container.resolve(PatientService);
+                const patientUserIds = await patientService.getAllPatientUserIds();
+                const patientIds = patientUserIds.map(id => id);
                 const apiKey = `${process.env.SENSE_X_API_KEY}`;
-
                 const reportService = new ReportService();
-                await reportService.processReport(patientId, apiKey);
+                await reportService.processReport(patientIds, apiKey);
             })();
         });
     };

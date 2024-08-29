@@ -14,6 +14,7 @@ import { IUserRepo } from "../../../database/repository.interfaces/users/user/us
 import { IPersonRepo } from "../../../database/repository.interfaces/person/person.repo.interface";
 import { Injector } from "../../../startup/injector";
 import { SenseDeviceVitalsService } from "../../../modules/devices/providers/senseH/ayta.device.vitals.service";
+import { IPatientRepo } from "../../../database/repository.interfaces/users/patient/patient.repo.interface";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -27,6 +28,7 @@ export class BloodPressureService {
         @inject('IUserDeviceDetailsRepo') private _userDeviceDetailsRepo: IUserDeviceDetailsRepo,
         @inject('IUserRepo') private _userRepo: IUserRepo,
         @inject('IPersonRepo') private _personRepo: IPersonRepo,
+        @inject('IPatientRepo') private _patientRepo: IPatientRepo,
     ) {
         if (ConfigurationManager.EhrEnabled()) {
             this._ehrBloodPressureStore = Injector.Container.resolve(BloodPressureStore);
@@ -102,10 +104,18 @@ export class BloodPressureService {
     };
 
     fetchAndStoreBpData = async () => {
-        const senseDeviceVitalsService = new SenseDeviceVitalsService();
-        const bpData = await senseDeviceVitalsService.searchBp(`${process.env.SENSE_PATIENT_ID}`);
-        if (bpData) {
-            await this._bloodPressureRepo.storeBpData(bpData);
+        try {
+            const patientUserIds  = await this._patientRepo.getAllPatientUserIds();
+
+            for (const userId of patientUserIds) {
+                const senseDeviceVitalsService = new SenseDeviceVitalsService();
+                const bpData = await senseDeviceVitalsService.searchBp(userId);
+                if (bpData) {
+                    await this._bloodPressureRepo.storeBpData(bpData);
+                }
+            }
+        } catch (error) {
+            Logger.instance().log(`Error fetching and storing BP data: ${error}`);
         }
     };
 

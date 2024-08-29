@@ -24,4 +24,6 @@ export interface IDocumentRepo {
 
     delete(id: string): Promise<boolean>;
 
+    getDocumentByReferenceId(referenceId: string): Promise<DocumentDto>
+
 }

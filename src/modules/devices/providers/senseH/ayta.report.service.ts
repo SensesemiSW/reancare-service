@@ -6,58 +6,25 @@ import { Logger } from '../../../../common/logger';
 import { injectable } from 'tsyringe';
 import { Injector } from '../../../../startup/injector';
 import { FileResourceService } from '../../../../services/general/file.resource.service';
-// import { DocumentValidator } from '../../../../api/users/patient/document/document.validator';
 import { DocumentDomainModel } from '../../../../domain.types/users/patient/document/document.domain.model';
 import { FileResourceUploadDomainModel } from '../../../../domain.types/general/file.resource/file.resource.domain.model';
 import { DocumentService } from '../../../../services/users/patient/document.service';
 import { DownloadDisposition, FileResourceMetadata } from '../../../../domain.types/general/file.resource/file.resource.types';
 import { DocumentTypes } from '../../../../domain.types/users/patient/document/document.types';
-import { Roles } from '../../../../domain.types/role/role.types';
 import { VisitType } from '../../../../domain.types/miscellaneous/clinical.types';
 import { OrderTypes } from '../../../../domain.types/clinical/order/order.types';
-import { TimeHelper } from '../../../../common/time.helper';
-import { ConfigurationManager } from '../../../../config/configuration.manager';
-// import { DocumentTypes } from '../../../../domain.types/users/patient/document/document.types';
 
 ///////////////////////////////////////////////////////////////////////
-
-const PROCESSED_REPORTS_FILE = path.join(process.cwd(), 'src', 'modules', 'devices', 'providers', 'senseH', 'processedReports.txt');
 
 @injectable()
 export class ReportService {
 
     _fileResourceService: FileResourceService = Injector.Container.resolve(FileResourceService);
 
-    // _validator: DocumentValidator = new DocumentValidator();
-
-    _service: DocumentService = Injector.Container.resolve(DocumentService);
-
-    private processedReports: Set<string>;
-
-    constructor() {
-        this.processedReports = this.loadProcessedReports();
-    }
-
-    private loadProcessedReports(): Set<string> {
-        const processedReports = new Set<string>();
-        if (fs.existsSync(PROCESSED_REPORTS_FILE)) {
-            const fileContent = fs.readFileSync(PROCESSED_REPORTS_FILE, 'utf8');
-            fileContent.split('\n').forEach(line => {
-                if (line.trim()) {
-                    processedReports.add(line.trim());
-                }
-            });
-        }
-        return processedReports;
-    }
-
-    private markReportAsProcessed(reportKey: string): void {
-        this.processedReports.add(reportKey);
-        fs.appendFileSync(PROCESSED_REPORTS_FILE, `${reportKey}\n`, 'utf8');
-    }
+    _documentservice: DocumentService = Injector.Container.resolve(DocumentService);
 
     private async fetchReports(patientId: string, apiKey: string): Promise<any[]> {
-        const url = `${process.env.SENSE_BASE_URL}/reports`;
+        const url = `${process.env.SENSE_BASE_URL}/reports/`;
 
         try {
             const response = await axios.get(url, {
@@ -108,102 +75,95 @@ export class ReportService {
             throw new Error('Failed to download PDF');
         }
     }
-    
-    private isDuplicateReport(reportKey: string): boolean {
-        return this.processedReports.has(reportKey);
-    }
 
-    public async processReport(patientId: string, apiKey: string): Promise<void> {
+    public async processReport(patientIds: string[], apiKey: string): Promise<void> {
         try {
-            const reports = await this.fetchReports(patientId, apiKey);
+            for (const patientId of patientIds) {
+                const reports = await this.fetchReports(patientId, apiKey);
 
-            if (reports.length === 0) {
-                Logger.instance().log('No reports found for the given patientId');
-                return;
-            }
-
-            for (const report of reports) {
-                if (!report.ReportUrl || this.isDuplicateReport(report.ReportKeyName)) {
+                if (reports.length === 0) {
+                    Logger.instance().log(`No reports found for patientId: ${patientId}`);
                     continue;
                 }
 
-                const KeyName = report.ReportKeyName;
-                const parts = KeyName.split('/');
-                const originalName = parts.pop();
+                for (const report of reports) {
+                    const KeyName = report.ReportKeyName;
+                    const parts = KeyName.split('/');
+                    const originalName = parts.pop();
+                    const referenceId = report.id;
 
-                const sourceFilePath = path.join(process.cwd(), 'src', 'modules', 'devices', 'providers', 'senseH', 'downloads', `${originalName}`);
+                    const existingDocument = await this._documentservice.getDocumentByReferenceId(referenceId);
 
-                await this.downloadPDF(report);
+                    if (existingDocument) {
+                        continue;
+                    }
 
-                const fileResourceMetadata: FileResourceMetadata = {
-                    ResourceId       : "12345",
-                    VersionId        : "v1.0",
-                    Version          : "1.0.0",
-                    FileName         : originalName,
-                    OriginalName     : originalName,
-                    SourceFilePath   : sourceFilePath,
-                    MimeType         : "application/pdf",
-                    Size             : 204800,
-                    StorageKey       : report.ReportKeyName,
-                    IsDefaultVersion : true,
-                    IsPublicResource : false,
-                    Disposition      : DownloadDisposition.Inline,
-                    Url              : report.ReportUrl,
-                    Stream           : null,
-                };
+                    const sourceFilePath = path.join(process.cwd(), 'src', 'modules', 'devices', 'providers', 'senseH', 'downloads', `${originalName}`);
 
-                const model: DocumentDomainModel = {
-                    id                        : report.id,
-                    EhrId                     : report.id,
-                    DisplayId                 : "DID123",
-                    DocumentType              : DocumentTypes.LabReport, // pascal
-                    PatientUserId             : report.id, // caps // look for all the patientUserId
-                    MedicalPractitionerUserId : null,
-                    UploadedByUserId          : report.id, // PatientId
-                    AssociatedVisitId         : null,
-                    AssociatedOrderId         : null,
-                    MedicalPractionerRole     : null,
-                    AssociatedVisitType       : VisitType.LabVisit,
-                    AssociatedOrderType       : OrderTypes.Unknown,
-                    FileMetaData              : fileResourceMetadata,
-                    RecordDate                : new Date(),
-                    UploadedDate              : new Date()
-                };
+                    await this.downloadPDF(report);
 
-                var fileResourceDomainModel: FileResourceUploadDomainModel = {
-                    FileMetadata           : model.FileMetaData,
-                    IsMultiResolutionImage : false,
-                    IsPublicResource       : false,
-                    OwnerUserId            : model.id,
-                    UploadedByUserId       : model.id
-                };
-                var fileResourceDto = await this._fileResourceService.upload(fileResourceDomainModel);
-                model.FileMetaData = fileResourceDto.DefaultVersion;
-    
-                const document = await this._service.upload(model);
+                    const fileResourceMetadata: FileResourceMetadata = {
+                        ResourceId       : "12345",
+                        VersionId        : "v1.0",
+                        Version          : "1.0.0",
+                        FileName         : originalName,
+                        OriginalName     : originalName,
+                        SourceFilePath   : sourceFilePath,
+                        MimeType         : "application/pdf",
+                        Size             : 204800,
+                        StorageKey       : report.ReportKeyName,
+                        IsDefaultVersion : true,
+                        IsPublicResource : false,
+                        Disposition      : DownloadDisposition.Inline,
+                        Url              : report.ReportUrl,
+                        Stream           : null,
+                    };
 
-                if (document == null) {
-                    Logger.instance().log('Cannot upload document!');
+                    const model: DocumentDomainModel = {
+                        id                        : report.id,
+                        EhrId                     : report.id,
+                        DisplayId                 : "SENSE",
+                        DocumentType              : DocumentTypes.LabReport,
+                        PatientUserId             : report.PatientId,
+                        MedicalPractitionerUserId : null,
+                        UploadedByUserId          : report.PatientId,
+                        AssociatedVisitId         : null,
+                        AssociatedOrderId         : null,
+                        MedicalPractionerRole     : null,
+                        AssociatedVisitType       : VisitType.LabVisit,
+                        AssociatedOrderType       : OrderTypes.Unknown,
+                        FileMetaData              : fileResourceMetadata,
+                        RecordDate                : new Date(),
+                        UploadedDate              : new Date(),
+                        ReferenceId               : report.id
+                    };
+
+                    const fileResourceDomainModel: FileResourceUploadDomainModel = {
+                        FileMetadata           : model.FileMetaData,
+                        IsMultiResolutionImage : false,
+                        IsPublicResource       : false,
+                        OwnerUserId            : model.PatientUserId,
+                        UploadedByUserId       : model.PatientUserId
+                    };
+
+                    const fileResourceDto = await this._fileResourceService.upload(fileResourceDomainModel);
+                    model.FileMetaData = fileResourceDto.DefaultVersion;
+
+                    const document = await this._documentservice.upload(model);
+
+                    if (document == null) {
+                        Logger.instance().log('Cannot upload document!');
+                    }
+                    
+                    Logger.instance().log(`Report uploaded successfully for patientId: ${patientId}`);
                 }
-
-                this.markReportAsProcessed(report.ReportKeyName);
-                
-                Logger.instance().log(`Report uploaded successfully`);
             }
 
-            Logger.instance().log('Reports processed successfully');
+            Logger.instance().log('Reports processed successfully for all patients');
         } catch (error) {
             Logger.instance().log(`processReports: ${error}`);
         }
     }
-
-    // Existing helper methods
-    public getFileMetadataList(): string {
-        var timestamp = TimeHelper.timestamp(new Date());
-        var tempUploadFolder = ConfigurationManager.UploadTemporaryFolder();
-        var folderPath = path.join(tempUploadFolder, timestamp);
-        return folderPath;
-    }
-
+    
 }
 

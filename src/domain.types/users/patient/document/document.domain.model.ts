@@ -20,4 +20,5 @@ export interface DocumentDomainModel {
     FileMetaData?             : FileResourceMetadata;
     RecordDate?               : Date;
     UploadedDate?             : Date;
+    ReferenceId?              : string;
 }
