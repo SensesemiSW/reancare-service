@@ -105,10 +105,8 @@ export class BloodPressureService {
 
     fetchAndStoreBpData = async () => {
         try {
-            // Fetch all patients from the patient repository
             const patientUserIds  = await this._patientRepo.getAllPatientUserIds();
 
-            // Loop through each patient and fetch BP data
             for (const userId of patientUserIds) {
                 const senseDeviceVitalsService = new SenseDeviceVitalsService();
                 const bpData = await senseDeviceVitalsService.searchBp(userId);

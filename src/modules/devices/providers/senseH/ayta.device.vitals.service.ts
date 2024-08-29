@@ -60,7 +60,13 @@ const fetchData = async (endpoint: string, recordType: string, patientId: string
         const response = await axios.get(url, { headers });
 
         if (response.status === 200) {
-            return response.data.Data[recordType].Records;
+            const records = response.data.Data[recordType].Records;
+            
+            records.forEach((record: any) => {
+                record.PatientId = patientId;
+            });
+
+            return records;
         } else {
             Logger.instance().error(`Error fetching ${endpoint} data`, response.status, null);
             return null;

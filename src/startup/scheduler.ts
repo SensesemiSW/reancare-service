@@ -63,20 +63,12 @@ export class Scheduler {
                 this.scheduleCurrentTimezoneUpdate();
                 this.scheduleDailyStatistics();
                 this.scheduleStrokeSurvey();
-<<<<<<< HEAD
-=======
                 this.scheduleStrokeSurveyTextMessage();
-
->>>>>>> origin/develop-aytasense
                 this.scheduleFetchAdminDataFromSenseDevices();
                 this.scheduleFetchReportDataFromSenseDevices();
                 this.scheduleFetchDataFromSenseDevices();
                 this.scheduleFetchlientAdminDataFromSenseDevices();
-<<<<<<< HEAD
                 
-=======
-
->>>>>>> origin/develop-aytasense
                 //this.scheduleDaillyPatientTasks();
                 this.scheduleCareplanRegistrationRemindersForOldUsers();
                 this.scheduleHFHelperTextMessage();
