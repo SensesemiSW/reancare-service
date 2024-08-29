@@ -140,4 +140,18 @@ export default class BloodPressure extends Model {
     @DeletedAt
     DeletedAt: Date;
 
+    // Additional Fields
+    @Length({ min: 2, max: 128 })
+    @Column({
+        type      : DataType.STRING(128),
+        allowNull : true,
+    })
+    RefId: string;
+    
+    @Column(DataType.STRING)
+    DeviceName: string;
+    
+    @Column(DataType.JSON)
+      CalculatedData: JSON;
+
 }

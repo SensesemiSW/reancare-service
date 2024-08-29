@@ -21,4 +21,6 @@ export interface IBloodOxygenSaturationRepo {
 
     getRecent(patientUserId: string): Promise<BloodOxygenSaturationDto>;
 
+    StoreSpo2Data(spo2Data: any): Promise<any>;
+
 }

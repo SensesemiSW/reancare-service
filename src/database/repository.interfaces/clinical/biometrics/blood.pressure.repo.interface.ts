@@ -24,4 +24,7 @@ export interface IBloodPressureRepo {
     getAllUserResponsesBetween(patientUserId: string, dateFrom: Date, dateTo: Date): Promise<any[]>;
 
     getAllUserResponsesBefore(patientUserId: string, date: Date): Promise<any[]>;
+
+    storeBpData(bpData) : Promise<any>;
+
 }

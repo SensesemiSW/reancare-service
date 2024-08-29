@@ -12,6 +12,14 @@ import { TerraSupportService } from '../api/devices/device.integrations/terra/te
 import { UserService } from '../services/users/user/user.service';
 import { RunOnceScheduler } from '../modules/run.once.scripts/run.once.scheduler';
 import { DailyStatisticsService } from '../services/statistics/daily.statistics.service';
+import { ECGLeadOneService } from '../services/clinical/biometrics/ecg.one.lead.service';
+import { ECGLeadSixService } from '../services/clinical/biometrics/ecg.six.lead.service';
+import { ECGLeadTwelveService } from '../services/clinical/biometrics/ecg.twelve.lead.service';
+import { ReportService } from '../modules/devices/providers/senseH/ayta.report.service';
+// import { SenseDeviceVitalsUsageService } from '../modules/devices/providers/aytasense/ayta..device.vitals.usage.service';
+import { SenseDeviceAdminService } from '../services/users/user/user.sense.admin.service';
+import { BloodPressureService } from '../services/clinical/biometrics/blood.pressure.service';
+import { BloodOxygenSaturationService } from '../services/clinical/biometrics/blood.oxygen.saturation.service';
 
 ///////////////////////////////////////////////////////////////////////////
 export class Scheduler {
@@ -55,7 +63,12 @@ export class Scheduler {
                 this.scheduleDailyStatistics();
                 this.scheduleStrokeSurvey();
                 this.scheduleStrokeSurveyTextMessage();
-                
+
+                this.scheduleFetchAdminDataFromSenseDevices();
+                this.scheduleFetchReportDataFromSenseDevices();
+                this.scheduleFetchDataFromSenseDevices();
+                this.scheduleFetchlientAdminDataFromSenseDevices();
+
                 //this.scheduleDaillyPatientTasks();
                 this.scheduleCareplanRegistrationRemindersForOldUsers();
                 this.scheduleHFHelperTextMessage();
@@ -272,6 +285,58 @@ export class Scheduler {
     //         })();
     //     });
     // };
+
+    private scheduleFetchDataFromSenseDevices = () => {
+        cron.schedule(Scheduler._schedules['ScheduleFetchDataFromSenseDevices'], () => {
+            (async () => {
+                Logger.instance().log('Running scheduled jobs: Schedule Fetch data from sense devices...');
+                var bloodPressureService = Injector.Container.resolve(BloodPressureService);
+                var bloodOxygenSaturationService = Injector.Container.resolve(BloodOxygenSaturationService);
+                var ecgLeadOneService = Injector.Container.resolve(ECGLeadOneService);
+                var ecgLeadSixService = Injector.Container.resolve(ECGLeadSixService);
+                var ecgLeadTwelveService = Injector.Container.resolve(ECGLeadTwelveService);
+                await bloodPressureService.fetchAndStoreBpData();
+                await bloodOxygenSaturationService.fetchAndStoreSpO2Data();
+                await ecgLeadOneService.fetchAndStoreECGLeadOneData();
+                await ecgLeadSixService.fetchAndStoreECGLeadSixData();
+                await ecgLeadTwelveService.fetchAndStoreECGLeadTwelveData();
+            })();
+        });
+    };
+
+    private scheduleFetchReportDataFromSenseDevices = () => {
+        cron.schedule(Scheduler._schedules['ScheduleFetchDataFromSenseDevices'], () => {
+            (async () => {
+                Logger.instance().log('Running scheduled jobs: Schedule Fetch Patient Report from sense devices...');
+                const patientId = `${process.env.SENSE_PATIENT_ID}`;
+                const apiKey = `${process.env.SENSE_X_API_KEY}`;
+
+                const reportService = new ReportService();
+                await reportService.processReport(patientId, apiKey);
+            })();
+        });
+    };
+
+    private scheduleFetchAdminDataFromSenseDevices = () => {
+        cron.schedule(Scheduler._schedules['ScheduleFetchDataFromSenseDevices'], () => {
+            (async () => {
+                Logger.instance().log('Running scheduled jobs: Schedule Fetch Usage Data from sense devices...');
+                var senseDeviceAdminService = Injector.Container.resolve(SenseDeviceAdminService);
+                await senseDeviceAdminService.fetchAndStoreSenseDeviceAdminData();
+            })();
+        });
+    };
+
+    private scheduleFetchlientAdminDataFromSenseDevices = () => {
+        cron.schedule(Scheduler._schedules['ScheduleFetchDataFromSenseDevices'], () => {
+            (async () => {
+                Logger.instance().log('Running scheduled jobs: Schedule Fetch Client Usage Data from sense devices...');
+                const clientId = `${process.env.SENSE_CLIENT_ID}`;
+                var senseDeviceAdminService = Injector.Container.resolve(SenseDeviceAdminService);
+                await senseDeviceAdminService.fetchAndStoreSenseDeviceClientAdminData(clientId);
+            })();
+        });
+    };
 
     //#endregion
 
