@@ -201,7 +201,9 @@
             "GetPatientEligibility": false,
             "GetPatientEnrollments": true,
             "GetWeeklyStatus": false,
-            "UpdateRisk": false
+            "UpdateRisk": false,
+            "GetPatientActiveEnrollments": true,
+            "Stop": true
         },
         "ClinicalTypes": {
             "GetClinicalValidationStatuses": true,
@@ -277,15 +279,15 @@
             "MedicationConsumption": {
                 "DeleteFutureMedicationSchedules": false,
                 "GetById": false,
-                "GetMedicationConsumptionSummaryForDay": true,
-                "GetMedicationSchedule": false,
-                "GetMedicationScheduleForDay": false,
+                "GetSummaryForDay": true,
+                "GetScheduleForDuration": false,
+                "GetScheduleForDay": false,
                 "GetSummaryByCalendarMonths": false,
                 "MarkAsMissed": false,
                 "MarkAsTaken": false,
                 "MarkListAsMissed": false,
                 "MarkListAsTaken": false,
-                "Search": true
+                "SearchForPatient": true
             }
         },
         "Order": {
@@ -459,7 +461,7 @@
         "FileResource": {
             "Delete": false,
             "DeleteVersionByVersionId": false,
-            "DownloadById": false,
+            "DownloadById": true,
             "DownloadByVersionId": false,
             "DownloadByVersionName": false,
             "GetResourceInfo": false,
@@ -468,8 +470,8 @@
             "Rename": false,
             "Search": true,
             "SearchAndDownload": false,
-            "Update": false,
-            "Upload": false
+            "Update": true,
+            "Upload": true
         },
         "Notification": {
             "Create": false,
@@ -477,7 +479,9 @@
             "GetById": false,
             "MarkAsRead": false,
             "Search": true,
-            "Update": false
+            "Update": false,
+            "Send":false,
+            "SendToUser": false
         },
         "Organization": {
             "AddAddress": true,
@@ -601,6 +605,10 @@
             "GetUserEngagementStatsByWeek": true,
             "GetUserEngagementStatsByYear": true,
             "GetUserEngagementStatsForUser": true
+        },
+        "DailyStatistics": {
+            "GetDailyTenantStats": false,
+            "GetDailySystemStats": true
         }
     },
     "Tenant": {
@@ -637,7 +645,8 @@
             "GetByUserId": false,
             "Search": true,
             "SendTestNotification": false,
-            "Update": false
+            "Update": false,
+            "SendNotificationWithTopic": false
         },
         "Doctor": {
             "Create": true,
@@ -707,7 +716,10 @@
             },
             "Statistics": {
                 "GetPatientStats": true,
-                "GetPatientStatsReport": true
+                "GetPatientStatsReport": true,
+                "GetReportSettingsByUserId": true,
+                "UpdateReportSettingsByUserId": false,
+                "CreateReportSettings": false
             }
         },
         "User": {
@@ -716,12 +728,20 @@
             "GetById": true,
             "GetTenantsForUserWithEmail": true,
             "GetTenantsForUserWithPhone": true,
+            "GetTenantUserByRoleAndEmail": true,
+            "GetTenantUserByRoleAndPhone": true,
+            "GetUserByRoleAndPhone": true,
+            "GetUserByRoleAndEmail": true,
             "LoginWithOtp": true,
             "LoginWithPassword": true,
             "Logout": true,
+            "ChangePassword": true,
+            "SendPasswordResetCode": true,
             "ResetPassword": true,
             "RotateUserAccessToken": true,
-            "Search": true
+            "Search": true,
+            "Update": true,
+            "Delete": true
         },
         "UserTask": {
             "CancelTask": false,
@@ -828,5 +848,31 @@
                 "Update": false
             }
         }
+    },
+    "Hospitals": {
+        "HealthSystem": {
+            "Create": true,
+            "GetHealthSystemsWithTags": true,
+            "Search": true,
+            "GetById": true,
+            "Update": true,
+            "Delete": true
+        },
+        "Hospital": {
+            "Create": true,
+            "GetHospitalsForHealthSystem": true,
+            "Search": true,
+            "GetById": true,
+            "Update": true,
+            "Delete": true
+        }
+    },
+    "FollowUpCancellations": {
+        "Create": false,
+        "Search": false,
+        "GetById": false,
+        "Update": false,
+        "Delete": false
     }
+    
 }

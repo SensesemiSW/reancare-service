@@ -94,7 +94,7 @@
                 {
                     "Provider" : "REAN",
                     "Name": "High Risk Maternity Careplan",
-                    "Code": "Maternity-High-Risk",
+                    "Code": "Kenya-Maternity-Phase-2",
                     "DisplayName": "Maternity Careplan",
                     "DefaultDurationDays": 100,
                     "Description": "Personal care plans help you to explore, understand and record your individual choices for pregnancy, birth and early parenthood. Every woman and family is different, with individual needs, which have an influence on care and preferences."
@@ -116,11 +116,27 @@
                 },
                 {
                     "Provider" : "REAN_BW",
+                    "Name": "Patient donation confirmation message",
+                    "Code": "Patient-Donation-Confirmation",
+                    "DisplayName": "Blood Warior Patient Confirmation",
+                    "DefaultDurationDays": 30,
+                    "Description": "Blood warrior patient messages."
+                },
+                {
+                    "Provider" : "REAN_BW",
                     "Name": "Donor messages",
                     "Code": "Donor-Reminders",
                     "DisplayName": "Blood Warior Donor",
                     "DefaultDurationDays": 30,
                     "Description": "Blood warrior donor messages."
+                },
+                {
+                    "Provider" : "REAN_BW",
+                    "Name": "Volunteer messages",
+                    "Code": "Volunteer-Donation-Confirmation",
+                    "DisplayName": "Blood Warior Volunteer",
+                    "DefaultDurationDays": 30,
+                    "Description": "Blood warrior volunteer messages."
                 }
             ]
         }

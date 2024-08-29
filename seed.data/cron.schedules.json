@@ -28,7 +28,10 @@
         "ScheduleExistingSymptomDataToEHR": "30 10 29 11 *",
         "ScheduleExistingMedicationDataToEHR": "0 19 29 11 *",
         "DailyStatistics": "*/45 * * * *",
-        "ScheduleStrokeSurvey": "0 14 * * *"
+        "ScheduleStrokeSurvey": "0 14 * * *",
+        "ScheduleStrokeSurveyTextMessage": "30 15 * * *",
+        "ScheduleHFHelperTextMessage": "0 1 * * 1",
+        "ScheduleGGHNFollowUpReminder": "*/2 * * * *"
     },
     "development": {
         "FileCleanup": "*/55 * * * *",
@@ -56,7 +59,10 @@
         "ScheduleExistingSymptomDataToEHR": "30 10 29 11 *",
         "ScheduleExistingMedicationDataToEHR": "0 19 29 11 *",
         "DailyStatistics": "0 0 * * *",
-        "ScheduleStrokeSurvey": "0 14 * * *"
+        "ScheduleStrokeSurvey": "0 14 * * *",
+        "ScheduleStrokeSurveyTextMessage": "30 15 * * *",
+        "ScheduleHFHelperTextMessage": "0 1 6 8 *",
+        "ScheduleGGHNFollowUpReminder": "0 5 * * *"
     },
     "uat": {
         "FileCleanup": "*/30 * * * *",
@@ -84,7 +90,10 @@
         "ScheduleExistingSymptomDataToEHR": "0 18 30 11 *",
         "ScheduleExistingMedicationDataToEHR": "30 18 30 11 *",
         "DailyStatistics": "0 0 * * *",
-        "ScheduleStrokeSurvey": "0 14 * * *"
+        "ScheduleStrokeSurvey": "0 6 * * 1",
+        "ScheduleStrokeSurveyTextMessage": "30 15 * * *",
+        "ScheduleHFHelperTextMessage": "0 10 * * 3",
+        "ScheduleGGHNFollowUpReminder": "0 5 * * *"
     },
     "production": {
         "FileCleanup": "*/30 * * * *",
@@ -112,6 +121,9 @@
         "ScheduleExistingSymptomDataToEHR": "10 12 2 12 *",
         "ScheduleExistingMedicationDataToEHR": "50 12 4 12 *",
         "DailyStatistics": "0 0 * * *",
-        "ScheduleStrokeSurvey": "0 14 * * *"
+        "ScheduleStrokeSurvey": "0 14 * * *",
+        "ScheduleStrokeSurveyTextMessage": "30 15 * * *",
+        "ScheduleHFHelperTextMessage": "0 10 * * 3",
+        "ScheduleGGHNFollowUpReminder": "0 5 * * *"
     }
 }

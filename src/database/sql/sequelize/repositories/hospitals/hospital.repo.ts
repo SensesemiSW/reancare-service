@@ -17,6 +17,7 @@ export class HospitalRepo implements IHospitalRepo {
     create = async (model: HospitalDomainModel): Promise<HospitalDto> => {
         try {
             const entity = {
+                TenantId       : model.TenantId,
                 Name           : model.Name,
                 HealthSystemId : model.HealthSystemId,
                 Tags           : model.Tags && model.Tags.length > 0 ? JSON.stringify(model.Tags) : null,
@@ -60,6 +61,9 @@ export class HospitalRepo implements IHospitalRepo {
             if (model.Tags != null) {
                 record.Tags = model.Tags && model.Tags.length > 0 ? JSON.stringify(model.Tags) : null;
             }
+            if (model.HealthSystemId != null) {
+                record.HealthSystemId = model.HealthSystemId;
+            }
             await record.save();
 
             return await this.getById(id);
@@ -102,10 +106,36 @@ export class HospitalRepo implements IHospitalRepo {
             if (filters.HealthSystemId != null) {
                 search.where['HealthSystemId'] = { [Op.eq]: filters.HealthSystemId };
             }
+            if (filters.TenantId != null) {
+                search.where['TenantId'] = { [Op.eq]: filters.TenantId };
+            }
             if (filters.Tags != null) {
                 search.where['Tags'] = { [Op.like]: '%' + filters.Tags + '%' };
             }
 
+            let orderByColum = 'CreatedAt';
+            if (filters.OrderBy) {
+                orderByColum = filters.OrderBy;
+            }
+            let order = 'ASC';
+            if (filters.Order === 'descending') {
+                order = 'DESC';
+            }
+            search['order'] = [[orderByColum, order]];
+
+            let limit = 25;
+            if (filters.ItemsPerPage) {
+                limit = filters.ItemsPerPage;
+            }
+            let offset = 0;
+            let pageIndex = 0;
+            if (filters.PageIndex) {
+                pageIndex = filters.PageIndex < 0 ? 0 : filters.PageIndex;
+                offset = pageIndex * limit;
+            }
+            search['limit'] = limit;
+            search['offset'] = offset;
+            
             const searchResults = await Hospital.findAndCountAll(search);
             const dtos = searchResults.rows.map(x => HospitalMapper.toDto(x));
             const searchResult: HospitalSearchResults = {

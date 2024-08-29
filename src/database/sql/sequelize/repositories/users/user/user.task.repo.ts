@@ -14,6 +14,8 @@ import { UserTaskMapper } from '../../../mappers/users/user/user.task.mapper';
 import User from '../../../models/users/user/user.model';
 import UserTask from '../../../models/users/user/user.task.model';
 import { HelperRepo } from '../../common/helper.repo';
+import { NotificationChannel } from '../../../../../../domain.types/general/notification/notification.types';
+import CareplanActivity from '../../../models/clinical/careplan/careplan.activity.model';
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -28,8 +30,11 @@ export class UserTaskRepo implements IUserTaskRepo {
                 Category           : model.Category ?? null,
                 ActionType         : model.ActionType ?? null,
                 ActionId           : model.ActionId ?? null,
+                ParentActionId     : model.ParentActionId ?? null,
                 ScheduledStartTime : model.ScheduledStartTime ?? null,
                 ScheduledEndTime   : model.ScheduledEndTime ?? null,
+                Channel            : model.Channel ?? NotificationChannel.MobilePush,
+                TenantName         : model.TenantName ?? 'AHA',
             };
             const userTask = await UserTask.create(entity);
             return UserTaskMapper.toDto(userTask);
@@ -85,7 +90,10 @@ export class UserTaskRepo implements IUserTaskRepo {
                 search.where['UserId'] = filters.UserId;
             }
             if (filters.ActionId != null) {
-                search.where['ReferenceItemId'] = filters.ActionId;
+                search.where['ActionId'] = filters.ActionId;
+            }
+            if (filters.ParentActionId != null) {
+                search.where['ParentActionId'] = filters.ParentActionId;
             }
             if (filters.Task != null) {
                 search.where['Task'] = { [Op.like]: '%' + filters.Task + '%' };
@@ -305,6 +313,10 @@ export class UserTaskRepo implements IUserTaskRepo {
                 userTask.ActionId = model.ActionId;
             }
 
+            if (model.ParentActionId != null) {
+                userTask.ParentActionId = model.ParentActionId;
+            }
+
             if (model.IsRecurrent != null) {
                 userTask.IsRecurrent = model.IsRecurrent;
             }
@@ -489,9 +501,9 @@ export class UserTaskRepo implements IUserTaskRepo {
         }
     };
 
-    getStats = async (patientUserId: uuid, numMonths: number): Promise<any> => {
+    getStats = async (patientUserId: uuid, numDays: number): Promise<any> => {
         try {
-            const numDays = 30 * numMonths;
+            // const numDays = 30 * numMonths;
             const { stats, totalFinished, totalUnfinished } = await this.getDayByDayStats(patientUserId, numDays);
             return {
                 TaskStats       : stats,
@@ -504,9 +516,9 @@ export class UserTaskRepo implements IUserTaskRepo {
         }
     };
 
-    getUserEngagementStats = async (patientUserId: uuid, numMonths: number): Promise<any> => {
+    getUserEngagementStats = async (patientUserId: uuid, numDays: number): Promise<any> => {
         try {
-            const numDays = 30 * numMonths;
+            // const numDays = 30 * numMonths;
             var start = TimeHelper.subtractDuration(new Date(), numDays, DurationType.Day);
             var end = new Date();
 
@@ -609,5 +621,36 @@ export class UserTaskRepo implements IUserTaskRepo {
         stats.sort((a, b) => new Date(a.DayStr).getTime() - new Date(b.DayStr).getTime());
         return { stats, totalFinished, totalUnfinished };
     }
+
+    getUserTasksOfSelectiveChannel = async (timePeriod): Promise<any[]> => {
+        try {
+            const from = new Date();
+            const to = TimeHelper.addDuration(from, timePeriod, DurationType.Minute);
+
+            const foundResults = await UserTask.findAndCountAll({
+                where : {
+                    Channel : {
+                        [Op.or] : [NotificationChannel.Telegram, NotificationChannel.WhatsApp, NotificationChannel.WhatsappWati]
+                    },
+                    ScheduledStartTime : {
+                        [Op.gte] : from,
+                        [Op.lt ] : to,
+                    },
+                    Cancelled : false,
+                    Finished  : false,
+                }
+            });
+
+            const dtos: UserTaskDto[] = [];
+            for (const userTask of foundResults.rows) {
+                const dto = UserTaskMapper.toDto(userTask);
+                dtos.push(dto);
+            }
+            return dtos;
+
+        } catch (error) {
+            Logger.instance().log(error.message);
+        }
+    };
 
 }

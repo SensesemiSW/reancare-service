@@ -1,0 +1,18 @@
+[
+    {
+        "Name": "Patient donation confirmation message",
+        "TimeSlot": "Morning",
+        "Sequence": 1,
+        "Day": 1,
+        "Message": { "Variables" : {
+            "en" : [
+                {
+                    "type": "text",
+                    "text": "Patient"
+                }]
+        }
+        },
+        "ButtonsIds" : ["Change_TF_Date", "Need_Blood"],
+        "TemplateName": "patient_donation_confirmation"
+    }
+]

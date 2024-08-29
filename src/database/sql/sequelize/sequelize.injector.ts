@@ -97,6 +97,8 @@ import { ConsentRepo } from './repositories/auth/consent.repo';
 import { DailyStatisticsRepo } from './repositories/statistics/daily.statistics.repo';
 import { AhaStatisticsRepo } from './repositories/statistics/aha.statistics.repo';
 import { TenantSettingsRepo } from './repositories/tenant/tenant.settings.repo';
+import { HealthReportSettingsRepo } from './repositories/users/patient/health.report.setting.repo';
+import { FollowUpCancellationRepo } from './repositories/tenant/followups/cancellations/follow.up.cancellation.repo';
 import { ECGLeadOneRepo } from './repositories/clinical/biometrics/ecg.lead.one.repo';
 import { ECGLeadSixRepo } from './repositories/clinical/biometrics/ecg.lead.six.repo';
 import { ECGLeadTwelveRepo } from './repositories/clinical/biometrics/ecg.lead.twelve.repo';
@@ -207,6 +209,9 @@ export class SequelizeInjector {
         container.register('IDailyStatisticsRepo', DailyStatisticsRepo);
         container.register('IAhaStatisticsRepo', AhaStatisticsRepo);
         container.register('ITenantSettingsRepo',TenantSettingsRepo);
+        container.register('IHealthReportSettingsRepo',HealthReportSettingsRepo);
+        container.register('IFollowUpCancellationRepo',FollowUpCancellationRepo);
+
         container.register('IECGLeadOneRepo', ECGLeadOneRepo);
         container.register('IECGLeadSixRepo', ECGLeadSixRepo);
         container.register('IECGLeadTwelveRepo', ECGLeadTwelveRepo);

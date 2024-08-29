@@ -1,0 +1,22 @@
+[
+    {
+        "Name": "Volunteer message after 5 days of donation date",
+        "TimeSlot": "Morning",
+        "Sequence": 1,
+        "Day": 1,
+        "Message": { "Variables" : {
+            "en" : [
+                {
+                    "type": "text",
+                    "text": "Volunteer"
+                },
+                {
+                    "type": "text",
+                    "text": "Patient"
+                }]
+        }
+        },
+        "ButtonsIds" : ["Volunteer_Update_TF_Date", "Schedule_Donation"],
+        "TemplateName": "volunteer_reminder_1"
+    }
+]

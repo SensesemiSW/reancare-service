@@ -77,11 +77,11 @@ export class CareplanRepo implements ICareplanRepo {
         }
     };
 
-    public getCareplanEnrollment = async (careplanId: uuid): Promise<EnrollmentDto> => {
+    public getCareplanEnrollment = async (enrollmentId: uuid): Promise<EnrollmentDto> => {
         try {
             const enrollment = await CareplanEnrollment.findOne({
                 where : {
-                    id : careplanId
+                    id : enrollmentId
                 }
             });
             return EnrollmentMapper.toDto(enrollment);
@@ -219,7 +219,8 @@ export class CareplanRepo implements ICareplanRepo {
                     ScheduledAt      : activity.ScheduledAt,
                     Sequence         : activity.Sequence ?? count,
                     Frequency        : activity.Frequency ?? 1,
-                    Status           : activity.Status
+                    Status           : activity.Status,
+                    RawContent       : activity.RawContent ?? null
                 };
                 count++;
                 activityEntities.push(entity);
@@ -504,10 +505,11 @@ export class CareplanRepo implements ICareplanRepo {
         }
     };
 
-    public deleteFutureCareplanTask = async (enrollment ): Promise<number> => {
+    public deleteFutureCareplanTask = async (enrollment: EnrollmentDto ): Promise<number> => {
         try {
             var selector = {
                 where : {
+                    EnrollmentId  : enrollment.EnrollmentStringId,
                     PatientUserId : enrollment.PatientUserId,
                     ScheduledAt   : { [Op.gte]: new Date() }
                 }
@@ -515,18 +517,51 @@ export class CareplanRepo implements ICareplanRepo {
 
             const ids = (await CareplanActivity.findAll(selector)).map(x => x.id);
             const deletedCount = await CareplanActivity.destroy(selector);
-            Logger.instance().log(`Deleted ${deletedCount} careplan task.`);
+            Logger.instance().log(`Deleted ${deletedCount} careplan activity task.`);
 
             if (deletedCount > 0) {
                 var deletedTaskCount = await UserTask.destroy({
                     where : {
-                        ActionId : ids, //ActionType : UserTaskActionType.Medication
+                        ActionId : ids,
                     }
                 });
                 Logger.instance().log(`Deleted ${deletedTaskCount} careplan associated user tasks.`);
 
             }
             return deletedCount;
+        } catch (error) {
+            Logger.instance().log(error.message);
+            throw new ApiError(500, error.message);
+        }
+    };
+
+    public getPatientActiveEnrollments = async (patientUserId: string): Promise<EnrollmentDto[]> => {
+        try {
+            var where_clause = { PatientUserId: patientUserId, IsActive: true };
+            where_clause['EndDate'] = { [Op.gte]: new Date() };
+            
+            const enrollments = await CareplanEnrollment.findAll({
+                where : where_clause
+            });
+
+            return enrollments.map(x => {
+                return EnrollmentMapper.toDto(x);
+            });
+        } catch (error) {
+            Logger.instance().log(error.message);
+            throw new ApiError(500, error.message);
+        }
+    };
+
+    public stop = async (careplanEnrollmentId: uuid): Promise<EnrollmentDto> => {
+        try {
+            const careplanEnrollment = await CareplanEnrollment.findByPk(careplanEnrollmentId);
+            careplanEnrollment.IsActive = false;
+            careplanEnrollment.StoppedAt = new Date();
+            careplanEnrollment.EndDate = new Date();
+            await careplanEnrollment.save();
+
+            return EnrollmentMapper.toDto(careplanEnrollment);
         } catch (error) {
             Logger.instance().log(error.message);
             throw new ApiError(500, error.message);

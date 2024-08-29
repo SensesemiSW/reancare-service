@@ -1,5 +1,5 @@
 import express from "express";
-import { AuthenticationResult } from "../domain.types/auth/auth.domain.types";
+import { AuthResult } from "../auth/auth.types";
 import { CurrentClient } from "../domain.types/miscellaneous/current.client";
 import { Injector } from "../startup/injector";
 import { ClientAppService } from "../services/client.apps/client.app.service";
@@ -16,16 +16,19 @@ export default class ClientAppAuthMiddleware
         request: express.Request,
         response: express.Response,
         next: express.NextFunction
-    ): Promise<boolean> => {
+    ): Promise<void> => {
         try {
             const requestUrl = request.originalUrl;
 
             // Handle certain endpoints separately
             const isHealthCheck = requestUrl === '/api/v1' && request.method === 'GET';
-            const currApiKey = requestUrl.includes('/api/v1/api-clients/') && requestUrl.includes('/current-api-key');
-            const renewApiKey = requestUrl.includes('/api/v1/api-clients/') && requestUrl.includes('/renew-api-key');
+            const currApiKeyRoute = requestUrl.includes('/api/v1/api-clients/') && requestUrl.includes('/current-api-key');
+            const renewApiKeyRoute = requestUrl.includes('/api/v1/api-clients/') && requestUrl.includes('/renew-api-key');
 
-            if (currApiKey || renewApiKey) {
+            const apiKey: string = request.headers['x-api-key'] as string;
+            const apiKeyMissing = !apiKey || apiKey.trim() === '';
+
+            if (currApiKeyRoute || renewApiKeyRoute) {
                 const clientAppController = new ClientAppController();
                 const clientApp = await clientAppController.authenticateClientPassword(request);
                 if (clientApp != null) {
@@ -35,22 +38,24 @@ export default class ClientAppAuthMiddleware
                         IsPrivileged : clientApp.IsPrivileged,
                     };
                     request.currentClient = currentClient;
-                    request.clientAppRoutes = true;
                     next();
                 }
                 else {
                     ResponseHandler.failure(request, response, 'Invalid client credentials', 401);
-                    return false;
+                    return;
                 }
             }
             else if (isHealthCheck) {
+                next();
+            }
+            else if (apiKeyMissing && request.optionalUserAuth) {
                 next();
             }
             else {
                 const authResult = await this.authenticate(request);
                 if (authResult.Result === false){
                     ResponseHandler.failure(request, response, authResult.Message, authResult.HttpErrorCode);
-                    return false;
+                    return;
                 }
                 next();
             }
@@ -60,13 +65,16 @@ export default class ClientAppAuthMiddleware
         }
     };
 
-    private static authenticate = async (request: express.Request): Promise<AuthenticationResult> => {
+    private static authenticate = async (request: express.Request): Promise<AuthResult> => {
+
+        let res: AuthResult = {
+            Result        : true,
+            Message       : 'Authenticated',
+            HttpErrorCode : 200,
+        };
+
         try {
-            var res: AuthenticationResult = {
-                Result        : true,
-                Message       : 'Authenticated',
-                HttpErrorCode : 200,
-            };
+
             let apiKey: string = request.headers['x-api-key'] as string;
 
             if (!apiKey) {
@@ -103,4 +111,3 @@ export default class ClientAppAuthMiddleware
     };
 
 }
-

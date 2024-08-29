@@ -11,6 +11,8 @@ import { SleepMapper } from '../../../mappers/wellness/daily.records/sleep.mappe
 import Sleep from '../../../models/wellness/daily.records/sleep.model';
 import { HelperRepo } from '../../common/helper.repo';
 import { uuid } from '../../../../../../domain.types/miscellaneous/system.types';
+import { Helper } from '../../../../../../common/helper';
+import { ReportFrequency } from '../../../../../../domain.types/users/patient/health.report.setting/health.report.setting.domain.model';
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -21,6 +23,7 @@ export class SleepRepo implements ISleepRepo {
             const entity = {
                 PatientUserId : createModel.PatientUserId,
                 SleepDuration : createModel.SleepDuration,
+                SleepMinutes  : createModel.SleepMinutes,
                 Unit          : createModel.Unit,
                 RecordDate    : createModel.RecordDate,
             };
@@ -155,6 +158,9 @@ export class SleepRepo implements ISleepRepo {
             if (updateModel.SleepDuration != null) {
                 sleep.SleepDuration = updateModel.SleepDuration;
             }
+            if (updateModel.SleepMinutes != null) {
+                sleep.SleepMinutes = updateModel.SleepMinutes;
+            }
             if (updateModel.Unit != null) {
                 sleep.Unit = updateModel.Unit;
             }
@@ -181,11 +187,14 @@ export class SleepRepo implements ISleepRepo {
         }
     };
 
-    getStats = async (patientUserId: uuid, numMonths: number): Promise<any> => {
+    getStats = async (patientUserId: uuid, frequency: ReportFrequency): Promise<any> => {
         try {
             // const numDays = 30 * numMonths;
             // const offsetMinutes = await HelperRepo.getPatientTimezoneOffsets(patientUserId);
-            const records = await this.getSleepRecords(patientUserId, numMonths, DurationType.Month);
+            const duration = Helper.frequencyToDuration(frequency);
+            const durationType = Helper.frequencyToDurationType(frequency);
+            
+            const records = await this.getSleepRecords(patientUserId, duration, durationType);
             if (records.length === 0) {
                 return [];
             }
@@ -221,9 +230,9 @@ export class SleepRepo implements ISleepRepo {
         }
     };
 
-    private async getSleepRecords(patientUserId: string, count: number, unit: DurationType) {
+    private async getSleepRecords(patientUserId: string, duration: number, durationType: DurationType) {
         const today = new Date();
-        const from = TimeHelper.subtractDuration(new Date(), count, unit);
+        const from = TimeHelper.subtractDuration(new Date(), duration, durationType);
         const result = await Sleep.findAll({
             where : {
                 PatientUserId : patientUserId,

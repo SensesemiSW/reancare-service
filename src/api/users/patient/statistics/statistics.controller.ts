@@ -18,10 +18,14 @@ import { ConfigurationManager } from '../../../../config/configuration.manager';
 import { Injector } from '../../../../startup/injector';
 import { ApiError } from '../../../../common/api.error';
 import { UserService } from '../../../../services/users/user/user.service';
+import { HealthReportSettingService } from '../../../../services/users/patient/health.report.setting.service';
+import { HealthReportSettingsDomainModel, ReportFrequency, Settings } from '../../../../domain.types/users/patient/health.report.setting/health.report.setting.domain.model';
+import { uuid } from '../../../../domain.types/miscellaneous/system.types';
+import { PatientBaseController } from '../patient.base.controller';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-export class StatisticsController {
+export class StatisticsController extends PatientBaseController {
 
     //#region member variables and constructors
 
@@ -37,6 +41,8 @@ export class StatisticsController {
 
     _personService: PersonService = Injector.Container.resolve(PersonService);
 
+    _healthReportSettingService: HealthReportSettingService = Injector.Container.resolve(HealthReportSettingService);
+
     _validator: StatisticsValidator = new StatisticsValidator();
 
     //#endregion
@@ -46,6 +52,7 @@ export class StatisticsController {
     getPatientStats = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             const patientUserId: string = await this._validator.getParamUuid(request, 'patientUserId');
+            await this.authorizeOne(request, patientUserId);
             const stats = await this._service.getPatientStats(patientUserId);
             ResponseHandler.success(request, response, 'Document retrieved successfully!', 200, {
                 Statistics : stats,
@@ -57,9 +64,10 @@ export class StatisticsController {
 
     getPatientHealthSummary = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
-            request.context = 'PatientStatistics.getPatientHealthSummary';
+            // request.context = 'PatientStatistics.getPatientHealthSummary'; ???
 
             const patientUserId: string = await this._validator.getParamUuid(request, 'patientUserId');
+            await this.authorizeOne(request, patientUserId);
             const existingUser = await this._userService.getById(patientUserId);
             if (existingUser == null) {
                 throw new ApiError(404, 'User not found.');
@@ -81,9 +89,22 @@ export class StatisticsController {
     getPatientStatsReport = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             const patientUserId: string = await this._validator.getParamUuid(request, 'patientUserId');
+            await this.authorizeOne(request, patientUserId);
             const clientCode = request.currentClient.ClientCode;
+            
+            let reportSettings = await this._healthReportSettingService.getReportSettingsByUserId(patientUserId);
 
-            this.triggerReportGeneration(patientUserId, clientCode);
+            if (!reportSettings) {
+                const model = this.getHealthReportSettingModel(patientUserId);
+                reportSettings = await this._healthReportSettingService.createReportSettings(model);
+                if (!reportSettings) {
+                    reportSettings.Preference = model.Preference;
+                }
+            }
+
+            const settings = reportSettings.Preference;
+
+            this.triggerReportGeneration(patientUserId, clientCode, settings);
             ResponseHandler.success(
                 request,
                 response,
@@ -92,6 +113,96 @@ export class StatisticsController {
                 {
                     ReportUrl : "",
                 });
+        } catch (error) {
+            ResponseHandler.handleError(request, response, error);
+        }
+    };
+
+    createReportSettings = async (request: express.Request, response: express.Response): Promise<void> => {
+        try {
+            const userId: uuid = await this._validator.getParamUuid(request, 'patientUserId');
+            await this.authorizeOne(request, userId);
+            const isUserExits = await this._userService.getById(userId);
+            if (!isUserExits) {
+                throw new ApiError(404, 'User not found.');
+            }
+
+            const createModel = await this._validator.create(request);
+            createModel.PatientUserId = userId;
+            const reportSetting = await this._healthReportSettingService.createReportSettings(createModel);
+
+            if (reportSetting == null) {
+                throw new ApiError(400, 'Cannot create health report settings!');
+            }
+            ResponseHandler.success(request, response, 'Health report settings created successfully!', 201, {
+                Setting : reportSetting,
+            });
+
+        } catch (error) {
+            ResponseHandler.handleError(request, response, error);
+        }
+    };
+    
+    getReportSettingsByUserId = async (request: express.Request, response: express.Response): Promise<void> => {
+        try {
+
+            const userId: uuid = await this._validator.getParamUuid(request, 'patientUserId');
+            await this.authorizeOne(request, userId);
+            const isUserExits = await this._userService.getById(userId);
+            if (!isUserExits) {
+                throw new ApiError(404, 'User not found.');
+            }
+
+            let existingSettings = await this._healthReportSettingService.getReportSettingsByUserId(userId);
+            if (existingSettings == null) {
+                const model: HealthReportSettingsDomainModel = this.getHealthReportSettingModel(userId);
+                existingSettings = await this._healthReportSettingService.createReportSettings(model);
+                if (existingSettings == null) {
+                    throw new ApiError(400, 'Cannot create health report settings!');
+                }
+            }
+
+            ResponseHandler.success(request, response, 'Patient health report settings retrieved successfully!', 200, {
+                Settings : existingSettings,
+            });
+        } catch (error) {
+            ResponseHandler.handleError(request, response, error);
+        }
+    };
+
+    updateReportSettingsByUserId = async (request: express.Request, response: express.Response): Promise<void> => {
+        try {
+            const userId: uuid = await this._validator.getParamUuid(request, 'patientUserId');
+            await this.authorizeOne(request, userId);
+            const isUserExits = await this._userService.getById(userId);
+            if (!isUserExits) {
+                throw new ApiError(404, 'User not found.');
+            }
+            
+            let existingSettings = await this._healthReportSettingService.getReportSettingsByUserId(userId);
+            if (existingSettings == null) {
+                const model: HealthReportSettingsDomainModel = this.getHealthReportSettingModel(userId);
+                existingSettings = await this._healthReportSettingService.createReportSettings(model);
+                if (existingSettings == null) {
+                    throw new ApiError(400, 'Cannot create health report settings!');
+                }
+            }
+
+            const updateModel = await this._validator.update(request);
+            updateModel.PatientUserId = userId;
+
+            const updatedReportSetting = await this._healthReportSettingService.updateReportSettingsByUserId(
+                userId,
+                updateModel
+            );
+            if (updatedReportSetting == null) {
+                throw new ApiError(400, 'Unable to update patient health report settings!');
+            }
+
+            ResponseHandler.success(request, response, 'Patient health report settings updated successfully!', 200, {
+                Settings : updatedReportSetting,
+            });
+
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
         }
@@ -161,8 +272,9 @@ export class StatisticsController {
     };
     //#endregion
 
-    private triggerReportGeneration = async (patientUserId: string, clientCode: string): Promise<any> => {
-        const stats = await this._service.getPatientStats(patientUserId);
+    private triggerReportGeneration = async (patientUserId: string, clientCode: string, reportSettings: Settings):
+     Promise<any> => {
+        const stats = await this._service.getPatientStats(patientUserId, reportSettings);
         const patient = await this._patientService.getByUserId(patientUserId);
         const reportModel = this._service.getReportModel(patient, stats, clientCode);
         if (reportModel.ImageResourceId != null) {
@@ -173,10 +285,30 @@ export class StatisticsController {
         else {
             reportModel.ProfileImagePath = Helper.getDefaultProfileImageForGender(patient.User.Person.Gender);
         }
-        const { filename, localFilePath } = await this._service.generateReport(reportModel);
+        const { filename, localFilePath } = await this._service.generateReport(reportModel, reportSettings);
         const reportUrl = await this.createReportDocument(reportModel, filename, localFilePath);
         this.sendMessageForReportUpdate(reportUrl, reportModel);
         return reportUrl;
+    };
+
+    private getHealthReportSettingModel = (patientUserId: string) => {
+        const model: HealthReportSettingsDomainModel = {
+            PatientUserId : patientUserId,
+            Preference    : {
+                ReportFrequency             : ReportFrequency.Month,
+                HealthJourney               : true,
+                MedicationAdherence         : true,
+                BodyWeight                  : true,
+                BloodGlucose                : true,
+                BloodPressure               : true,
+                SleepHistory                : true,
+                LabValues                   : true,
+                ExerciseAndPhysicalActivity : true,
+                FoodAndNutrition            : true,
+                DailyTaskStatus             : true,
+            }
+        };
+        return model;
     };
 
 }

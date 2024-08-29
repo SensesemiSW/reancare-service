@@ -530,7 +530,7 @@ export class AssessmentHelperRepo implements IAssessmentHelperRepo {
                 thisNode.QueryResponseType = updates['QueryResponseType'];
             }
             if (Helper.hasProperty(updates, 'RawData')) {
-                thisNode.RawData = updates['RawData'];
+                thisNode.RawData = updates['RawData'] ? JSON.stringify(updates['RawData']) : null;
             }
             if (Helper.hasProperty(updates, 'Message')) {
                 thisNode.Message = updates['Message'];
@@ -544,7 +544,7 @@ export class AssessmentHelperRepo implements IAssessmentHelperRepo {
         }
     };
 
-    public searchNode = async ( filters:AssessmentNodeSearchFilters):
+    public searchNodes = async ( filters:AssessmentNodeSearchFilters):
      Promise<AssessmentNodeSearchResults> => {
         try {
             const search = { where: {} };

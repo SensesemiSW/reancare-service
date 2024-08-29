@@ -8,10 +8,12 @@ import { PatientService } from '../../../services/users/patient/patient.service'
 import { FirebaseNotificationService } from '../../../modules/communication/notification.service/providers/firebase.notification.service';
 import { Logger } from '../../../common/logger';
 import { Injector } from '../../../startup/injector';
+import { PatientAppNameCache } from '../../../modules/ehr.analytics/patient.appname.cache';
+import { BaseUserController } from '../base.user.controller';
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-export class UserDeviceDetailsController {
+export class UserDeviceDetailsController extends BaseUserController {
 
     //#region member variables and constructors
 
@@ -43,14 +45,14 @@ export class UserDeviceDetailsController {
     getById = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             const id: string = await UserDeviceDetailsValidator.getById(request);
-
-            const UserDeviceDetails = await this._service.getById(id);
-            if (UserDeviceDetails == null) {
+            const record = await this._service.getById(id);
+            if (record == null) {
                 throw new ApiError(404, ' User device details record not found.');
             }
+            await this.authorizeOne(request, record.UserId);
 
             ResponseHandler.success(request, response, 'User device details record retrieved successfully!', 200, {
-                UserDeviceDetails : UserDeviceDetails,
+                UserDeviceDetails : record,
             });
         } catch (error) {
             ResponseHandler.handleError(request, response, error);
@@ -60,7 +62,8 @@ export class UserDeviceDetailsController {
     getByUserId = async (request: express.Request, response: express.Response): Promise<void> => {
         try {
             const id: string = await UserDeviceDetailsValidator.getById(request);
-
+            const userId = request.params.userId;
+            await this.authorizeOne(request, userId);
             const UserDeviceDetails = await this._service.getByUserId(id);
             if (UserDeviceDetails == null) {
                 throw new ApiError(404, 'User device details record not found.');
@@ -105,7 +108,7 @@ export class UserDeviceDetailsController {
             if (existingRecord == null) {
                 throw new ApiError(404, 'User device details record not found.');
             }
-
+            await this.authorizeOne(request, existingRecord.UserId);
             const updated = await this._service.update(domainModel.id, domainModel);
             if (updated == null) {
                 throw new ApiError(400, 'Unable to update user device details record!');
@@ -178,6 +181,27 @@ export class UserDeviceDetailsController {
         }
     };
 
+    sendNotificationWithTopic = async (request: express.Request, response: express.Response): Promise<void> => {
+        try {
+            var details = await UserDeviceDetailsValidator.sendNotificationWithTopic(request, response);
+
+            const message = await this._firebaseNotificationService.formatNotificationMessage(
+                details.Type, details.Title, details.Body, details.Url, details.Topic);
+
+            // call notification service to send to topic
+            await this._firebaseNotificationService.sendMessageToTopic(details.Topic, message);
+
+            ResponseHandler.success(request, response, 'Notification with topic sent successfully!', 201, {
+                Topic       : details.Topic,
+                Title       : details.Title,
+                Type        : details.Type,
+                Body        : details.Body,
+            });
+        } catch (error) {
+            ResponseHandler.handleError(request, response, error);
+        }
+    };
+
     private addUserDeviceDetails = async (request): Promise<any> => {
 
         const userDeviceDetailsDomainModel = await UserDeviceDetailsValidator.create(request);
@@ -196,6 +220,12 @@ export class UserDeviceDetailsController {
             userDeviceDetails = await this._service.update(existingRecord.id, userDeviceDetailsDomainModel);
         } else {
             userDeviceDetails = await this._service.create(userDeviceDetailsDomainModel);
+        }
+
+        var existingAppNames = await PatientAppNameCache.get(request.body.UserId);
+        if (existingAppNames.indexOf(request.body.AppName) === -1) {
+            existingAppNames.push(request.body.AppName);
+            PatientAppNameCache.add(request.body.UserId, existingAppNames);
         }
 
         Logger.instance().log(JSON.stringify(userDeviceDetails));

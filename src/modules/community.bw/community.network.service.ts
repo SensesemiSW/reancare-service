@@ -25,6 +25,7 @@ import { PatientService } from "../../services/users/patient/patient.service";
 import { IDonationCommunicationRepo } from "../../database/repository.interfaces/assorted/blood.donation/communication.repo.interface";
 import { Injector } from "../../startup/injector";
 import { IDonorRepo } from "../../database/repository.interfaces/assorted/blood.donation/donor.repo.interface";
+import { VolunteerNetworkService } from "./volunteer.management/volunteer.network.service";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -34,6 +35,8 @@ export class CommunityNetworkService {
     _patientNetworkService: PatientNetworkService = new PatientNetworkService();
 
     _donorNetworkService: DonorNetworkService = new DonorNetworkService();
+
+    _volunteerNetworkService: VolunteerNetworkService = new VolunteerNetworkService();
 
     _patientService: PatientService = null;
 
@@ -59,13 +62,9 @@ export class CommunityNetworkService {
 
     public enroll = async (enrollmentDetails: EnrollmentDomainModel): Promise<EnrollmentDto> => {
 
-        let patient = null;
-        if (enrollmentDetails.PlanCode === 'Donor-Reminders') {
-            patient = await this.getDonor(enrollmentDetails.PatientUserId);
-        } else {
-            patient = await this.getPatient(enrollmentDetails.PatientUserId);
-        }
-        if (!patient) {
+        const user = await this._userRepo.getById(enrollmentDetails.PatientUserId);
+        const person = await this._personRepo.getById(user.PersonId);
+        if (!user) {
             throw new Error('Patient does not exist!');
         }
 
@@ -78,15 +77,15 @@ export class CommunityNetworkService {
         }
         const planName = planDetails.DisplayName;
         enrollmentDetails.PlanName = planName;
-        var participantId = `${provider}${patient.User.Person.Phone}`;
+        var participantId = `${provider}${person.Phone}`;
 
         //Check if the participant is already registered with the care plan provider
         var participant = await this._careplanRepo.getPatientRegistrationDetails(
-            patient.UserId, provider);
+            user.id, provider);
 
         if (!participant) {
 
-            if (!patient.User.Person.Gender || !patient.User.Person.BirthDate) {
+            if (!person.Gender || !person.BirthDate) {
                 throw new Error('Gender and date of birth need to be specified before enrollment to care plan.');
             }
 
@@ -106,7 +105,7 @@ export class CommunityNetworkService {
         }
 
         enrollmentDetails.ParticipantId = participant.ParticipantId;
-        enrollmentDetails.Gender = patient.User.Person.Gender;
+        enrollmentDetails.Gender = person.Gender;
         enrollmentDetails.EnrollmentId = participant.ParticipantId;
 
         var dto = await this._careplanRepo.enrollPatient(enrollmentDetails);
@@ -115,8 +114,16 @@ export class CommunityNetworkService {
             var activities = await this._patientNetworkService.fetchActivities(
                 enrollmentDetails.PlanCode, enrollmentDetails.ParticipantId, enrollmentDetails.EnrollmentId,
                 enrollmentDetails.StartDate, patientHealthProfile.BloodTransfusionDate, enrollmentDetails.EndDate);
-        } else {
+        } else if (enrollmentDetails.PlanCode === 'Donor-Reminders') {
             var activities = await this._donorNetworkService.fetchActivities(
+                enrollmentDetails.PlanCode, enrollmentDetails.ParticipantId, enrollmentDetails.EnrollmentId,
+                enrollmentDetails.StartDate, enrollmentDetails.EndDate);
+        } else if (enrollmentDetails.PlanCode === 'Patient-Donation-Confirmation') {
+            var activities = await this._patientNetworkService.fetchActivities(
+                enrollmentDetails.PlanCode, enrollmentDetails.ParticipantId, enrollmentDetails.EnrollmentId,
+                enrollmentDetails.StartDate, null, enrollmentDetails.EndDate);
+        } else if (enrollmentDetails.PlanCode === 'Volunteer-Donation-Confirmation') {
+            var activities = await this._volunteerNetworkService.fetchActivities(
                 enrollmentDetails.PlanCode, enrollmentDetails.ParticipantId, enrollmentDetails.EnrollmentId,
                 enrollmentDetails.StartDate, enrollmentDetails.EndDate);
         }
@@ -136,13 +143,14 @@ export class CommunityNetworkService {
                 Category         : x.Category,
                 ProviderActionId : x.ProviderActionId,
                 Title            : x.Title,
-                Description      : JSON.stringify(x.Description),
+                Description      : x.Description,
                 Url              : x.Url,
                 Language         : x.Language,
                 ScheduledAt      : x.ScheduledAt,
                 Sequence         : x.Sequence,
                 Frequency        : x.Frequency,
-                Status           : x.Status
+                Status           : x.Status,
+                RawContent       : x.RawContent
             };
 
             return a;
@@ -160,7 +168,7 @@ export class CommunityNetworkService {
 
         //task scheduling
 
-        await this.createScheduledUserTasks(enrollmentDetails.PatientUserId, careplanActivities);
+        await this.createScheduledUserTasks(enrollmentDetails.PatientUserId, careplanActivities, enrollmentDetails);
 
         return dto;
     };
@@ -347,16 +355,18 @@ export class CommunityNetworkService {
         return donorDto;
     }
 
-    private async createScheduledUserTasks(patientUserId, careplanActivities) {
+    private async createScheduledUserTasks(patientUserId, careplanActivities, enrollmentDetail?) {
 
         // create user tasks based on activities
 
         var userDto = await this._userRepo.getById(patientUserId);
         var timezoneOffset = '+05:30';
-        if (userDto.DefaultTimeZone !== null) {
+        if (userDto.CurrentTimeZone !== null) {
+            timezoneOffset = userDto.CurrentTimeZone;
+        } else if (userDto.DefaultTimeZone !== null) {
             timezoneOffset = userDto.DefaultTimeZone;
         }
-
+        
         var activitiesGroupedByDate = {};
         for (const activity of careplanActivities) {
 
@@ -380,11 +390,10 @@ export class CommunityNetworkService {
 
             activities.forEach( async (activity) => {
                 var dayStartStr = activity.ScheduledAt.toISOString();
-                var dayStart = TimeHelper.getDateWithTimezone(dayStartStr, timezoneOffset);
-                dayStart = TimeHelper.addDuration(dayStart, 7, DurationType.Hour); // Start at 7:00 AM
-                var scheduleDelay = (activity.Sequence - 1) * 1;
-                var startTime = TimeHelper.addDuration(dayStart, scheduleDelay, DurationType.Second);   // Scheduled at every 1 sec
-                var endTime = TimeHelper.addDuration(dayStart, 16, DurationType.Hour);       // End at 11:00 PM
+                const offset = TimeHelper.getTimezoneOffsets(timezoneOffset, DurationType.Minute);
+                const startTime = TimeHelper.addDuration(new Date(dayStartStr), offset, DurationType.Minute);
+                Logger.instance().log(`UTC Date: ${startTime}`);
+                var endTime = TimeHelper.addDuration(startTime, 16, DurationType.Hour);       // End at 11:00 PM
 
                 var userTaskModel: UserTaskDomainModel = {
                     UserId             : activity.PatientUserId,
@@ -395,7 +404,9 @@ export class CommunityNetworkService {
                     ActionType         : UserActionType.Careplan,
                     ActionId           : activity.id,
                     ScheduledStartTime : startTime,
-                    ScheduledEndTime   : endTime
+                    ScheduledEndTime   : endTime,
+                    Channel            : enrollmentDetail.Channel ?? null,
+                    TenantName         : enrollmentDetail.TenantName ?? null,
                 };
 
                 var userTask = await this._userTaskRepo.create(userTaskModel);

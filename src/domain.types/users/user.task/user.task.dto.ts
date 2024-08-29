@@ -11,10 +11,13 @@ export interface UserTaskDto {
     Transcription?        : string;
     ActionType?           : UserActionType;
     ActionId?             : string;
+    ParentActionId?       : string;
     Action?               : any;
     ScheduledStartTime?   : Date;
     ScheduledEndTime?     : Date;
     Status?               : ProgressStatus;
+    Channel?              : string;
+    TenantName?           : string;
     Started?              : boolean;
     StartedAt?            : Date;
     Finished              : boolean;
