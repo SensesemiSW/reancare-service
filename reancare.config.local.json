@@ -4,7 +4,7 @@
         "Authentication": "Custom",
         "Authorization": "Custom",
         "UseRefreshToken": true,
-        "AccessTokenExpiresInSeconds": 108000,
+        "AccessTokenExpiresInSeconds": 2592000,
         "RefreshTokenExpiresInSeconds": 2592000
     },
     "Database" : {
