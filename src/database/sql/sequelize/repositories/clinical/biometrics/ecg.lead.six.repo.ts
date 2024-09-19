@@ -41,7 +41,6 @@ export class ECGLeadSixRepo implements IECGLeadSixRepo {
                     });
                 }
             }
-            Logger.instance().log('ECG six lead data stored successfully.');
         } catch (error) {
             Logger.instance().log('Error storing ECG six lead data: ' + error.message);
             throw new ApiError(500, 'Error storing ECG six lead data: ' + error.message);

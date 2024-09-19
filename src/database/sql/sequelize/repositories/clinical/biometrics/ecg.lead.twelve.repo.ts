@@ -41,7 +41,6 @@ export class ECGLeadTwelveRepo implements IECGLeadTwelveRepo {
                     });
                 }
             }
-            Logger.instance().log('ECG twelve lead data stored successfully.');
         } catch (error) {
             Logger.instance().log('Error storing ECG twelve lead data: ' + error.message);
             throw new ApiError(500, 'Error storing ECG twelve lead data: ' + error.message);

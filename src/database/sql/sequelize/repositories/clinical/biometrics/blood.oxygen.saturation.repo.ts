@@ -304,7 +304,6 @@ export class BloodOxygenSaturationRepo implements IBloodOxygenSaturationRepo {
                     });
                 }
             }
-            Logger.instance().log('Blood Saturation Oxygen data stored successfully.');
         } catch (error) {
             Logger.instance().log('Error storing blood saturation oxygen  data: ' + error.message);
             throw new ApiError(500, 'Error storing blood saturation oxygen data: ' + error.message);

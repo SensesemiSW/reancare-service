@@ -374,7 +374,6 @@ export class BloodPressureRepo implements IBloodPressureRepo {
                     });
                 }
             }
-            Logger.instance().log('Blood pressure data stored successfully.');
         } catch (error) {
             Logger.instance().log('Error storing blood pressure data: ' + error.message);
             throw new ApiError(500, 'Error storing blood pressure data: ' + error.message);

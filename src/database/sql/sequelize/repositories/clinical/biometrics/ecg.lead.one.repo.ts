@@ -42,7 +42,6 @@ export class ECGLeadOneRepo implements IECGLeadOneRepo {
                     });
                 }
             }
-            Logger.instance().log('ECG lead One data stored successfully.');
         } catch (error) {
             Logger.instance().log('Error storing ECG lead data: ' + error.message);
             throw new ApiError(500, 'Error storing ECG lead data: ' + error.message);
